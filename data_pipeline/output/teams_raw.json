@@ -1,0 +1,2906 @@
+[
+  {
+    "team_id": 9565,
+    "name": "Vitality",
+    "rank": 1,
+    "points": 2078,
+    "streak": 2,
+    "players": [
+      {
+        "id": 7322,
+        "name": "apex"
+      },
+      {
+        "id": 11816,
+        "name": "ropz"
+      },
+      {
+        "id": 11893,
+        "name": "zywoo"
+      },
+      {
+        "id": 16693,
+        "name": "flamez"
+      },
+      {
+        "id": 18462,
+        "name": "mezii"
+      }
+    ]
+  },
+  {
+    "team_id": 7020,
+    "name": "Spirit",
+    "rank": 2,
+    "points": 1929,
+    "streak": 7,
+    "players": [
+      {
+        "id": 16920,
+        "name": "sh1ro"
+      },
+      {
+        "id": 18317,
+        "name": "magixx"
+      },
+      {
+        "id": 19808,
+        "name": "tn1r"
+      },
+      {
+        "id": 20423,
+        "name": "zont1x"
+      },
+      {
+        "id": 21167,
+        "name": "donk"
+      }
+    ]
+  },
+  {
+    "team_id": 4608,
+    "name": "Natus Vincere",
+    "rank": 3,
+    "points": 1927,
+    "streak": 7,
+    "players": [
+      {
+        "id": 9816,
+        "name": "aleksib"
+      },
+      {
+        "id": 14759,
+        "name": "im"
+      },
+      {
+        "id": 18987,
+        "name": "b1t"
+      },
+      {
+        "id": 20127,
+        "name": "w0nderful"
+      },
+      {
+        "id": 22673,
+        "name": "makazze"
+      }
+    ]
+  },
+  {
+    "team_id": 11283,
+    "name": "Falcons",
+    "rank": 4,
+    "points": 1898,
+    "streak": 2,
+    "players": [
+      {
+        "id": 429,
+        "name": "karrigan"
+      },
+      {
+        "id": 3741,
+        "name": "niko"
+      },
+      {
+        "id": 12018,
+        "name": "teses"
+      },
+      {
+        "id": 19230,
+        "name": "m0nesy"
+      },
+      {
+        "id": 24177,
+        "name": "kyousuke"
+      }
+    ]
+  },
+  {
+    "team_id": 4494,
+    "name": "MOUZ",
+    "rank": 5,
+    "points": 1815,
+    "streak": 1,
+    "players": [
+      {
+        "id": 18072,
+        "name": "torzsi"
+      },
+      {
+        "id": 18221,
+        "name": "spinx"
+      },
+      {
+        "id": 19206,
+        "name": "jl"
+      },
+      {
+        "id": 20312,
+        "name": "xertion"
+      },
+      {
+        "id": 24457,
+        "name": "xelex"
+      }
+    ]
+  },
+  {
+    "team_id": 6248,
+    "name": "The MongolZ",
+    "rank": 6,
+    "points": 1813,
+    "streak": -1,
+    "players": [
+      {
+        "id": 20194,
+        "name": "blitz"
+      },
+      {
+        "id": 20275,
+        "name": "techno"
+      },
+      {
+        "id": 21001,
+        "name": "mzinho"
+      },
+      {
+        "id": 21809,
+        "name": "910"
+      },
+      {
+        "id": 23402,
+        "name": "cobrazera"
+      }
+    ]
+  },
+  {
+    "team_id": 11861,
+    "name": "Aurora",
+    "rank": 7,
+    "points": 1797,
+    "streak": 2,
+    "players": [
+      {
+        "id": 150,
+        "name": "maj3r"
+      },
+      {
+        "id": 7938,
+        "name": "xantares"
+      },
+      {
+        "id": 8574,
+        "name": "woxic"
+      },
+      {
+        "id": 20968,
+        "name": "soulfly"
+      },
+      {
+        "id": 21243,
+        "name": "wicadia"
+      }
+    ]
+  },
+  {
+    "team_id": 6665,
+    "name": "Astralis",
+    "rank": 8,
+    "points": 1794,
+    "streak": -2,
+    "players": [
+      {
+        "id": 10096,
+        "name": "hooxi"
+      },
+      {
+        "id": 16726,
+        "name": "phzy"
+      },
+      {
+        "id": 17956,
+        "name": "jabbi"
+      },
+      {
+        "id": 20304,
+        "name": "staehr"
+      },
+      {
+        "id": 21217,
+        "name": "ryu"
+      }
+    ]
+  },
+  {
+    "team_id": 8297,
+    "name": "FURIA",
+    "rank": 9,
+    "points": 1790,
+    "streak": 3,
+    "players": [
+      {
+        "id": 2023,
+        "name": "fallen"
+      },
+      {
+        "id": 12553,
+        "name": "yuurih"
+      },
+      {
+        "id": 13915,
+        "name": "yekindar"
+      },
+      {
+        "id": 15631,
+        "name": "kscerato"
+      },
+      {
+        "id": 24144,
+        "name": "molodoy"
+      }
+    ]
+  },
+  {
+    "team_id": 13286,
+    "name": "FUT",
+    "rank": 10,
+    "points": 1784,
+    "streak": -2,
+    "players": [
+      {
+        "id": 20584,
+        "name": "dem0n"
+      },
+      {
+        "id": 20761,
+        "name": "launx"
+      },
+      {
+        "id": 22203,
+        "name": "krabeni"
+      },
+      {
+        "id": 22674,
+        "name": "cmtry"
+      },
+      {
+        "id": 23553,
+        "name": "dziugss"
+      }
+    ]
+  },
+  {
+    "team_id": 5995,
+    "name": "G2",
+    "rank": 11,
+    "points": 1738,
+    "streak": 3,
+    "players": [
+      {
+        "id": 3972,
+        "name": "hunter"
+      },
+      {
+        "id": 9436,
+        "name": "nertz"
+      },
+      {
+        "id": 19164,
+        "name": "sunpayus"
+      },
+      {
+        "id": 20447,
+        "name": "heavygod"
+      },
+      {
+        "id": 21062,
+        "name": "matys"
+      }
+    ]
+  },
+  {
+    "team_id": 12467,
+    "name": "PARIVISION",
+    "rank": 12,
+    "points": 1726,
+    "streak": 1,
+    "players": [
+      {
+        "id": 13776,
+        "name": "jame"
+      },
+      {
+        "id": 19235,
+        "name": "belchonokk"
+      },
+      {
+        "id": 22471,
+        "name": "xielo"
+      },
+      {
+        "id": 22929,
+        "name": "nota"
+      },
+      {
+        "id": 23685,
+        "name": "zweih"
+      }
+    ]
+  },
+  {
+    "team_id": 9928,
+    "name": "GamerLegion",
+    "rank": 13,
+    "points": 1674,
+    "streak": 2,
+    "players": [
+      {
+        "id": 2553,
+        "name": "snax"
+      },
+      {
+        "id": 9278,
+        "name": "rez"
+      },
+      {
+        "id": 20301,
+        "name": "tauson"
+      },
+      {
+        "id": 22279,
+        "name": "pr"
+      },
+      {
+        "id": 23766,
+        "name": "hypex"
+      }
+    ]
+  },
+  {
+    "team_id": 9996,
+    "name": "9z",
+    "rank": 14,
+    "points": 1659,
+    "streak": -2,
+    "players": [
+      {
+        "id": 12092,
+        "name": "max"
+      },
+      {
+        "id": 14736,
+        "name": "dgt"
+      },
+      {
+        "id": 14737,
+        "name": "meyern"
+      },
+      {
+        "id": 20394,
+        "name": "luchov"
+      },
+      {
+        "id": 22613,
+        "name": "huasopeek"
+      }
+    ]
+  },
+  {
+    "team_id": 12468,
+    "name": "Legacy",
+    "rank": 15,
+    "points": 1658,
+    "streak": 1,
+    "players": [
+      {
+        "id": 12521,
+        "name": "art"
+      },
+      {
+        "id": 15698,
+        "name": "dumau"
+      },
+      {
+        "id": 19045,
+        "name": "latto"
+      },
+      {
+        "id": 19686,
+        "name": "n1ssim"
+      },
+      {
+        "id": 22965,
+        "name": "saadzin"
+      }
+    ]
+  },
+  {
+    "team_id": 4773,
+    "name": "paiN",
+    "rank": 16,
+    "points": 1620,
+    "streak": -1,
+    "players": [
+      {
+        "id": 16816,
+        "name": "vsm"
+      },
+      {
+        "id": 18141,
+        "name": "biguzera"
+      },
+      {
+        "id": 18714,
+        "name": "piriajr"
+      },
+      {
+        "id": 18835,
+        "name": "saffee"
+      },
+      {
+        "id": 20171,
+        "name": "snow"
+      }
+    ]
+  },
+  {
+    "team_id": 12394,
+    "name": "BetBoom",
+    "rank": 17,
+    "points": 1593,
+    "streak": 1,
+    "players": [
+      {
+        "id": 11840,
+        "name": "boombl4"
+      },
+      {
+        "id": 15662,
+        "name": "zorte"
+      },
+      {
+        "id": 18506,
+        "name": "s1ren"
+      },
+      {
+        "id": 20994,
+        "name": "fl4mus"
+      },
+      {
+        "id": 21667,
+        "name": "magnojez"
+      }
+    ]
+  },
+  {
+    "team_id": 11241,
+    "name": "B8",
+    "rank": 18,
+    "points": 1584,
+    "streak": 3,
+    "players": [
+      {
+        "id": 20112,
+        "name": "alex666"
+      },
+      {
+        "id": 21708,
+        "name": "npl"
+      },
+      {
+        "id": 22842,
+        "name": "kensizor"
+      },
+      {
+        "id": 23643,
+        "name": "esenthial"
+      },
+      {
+        "id": 25619,
+        "name": "s1zzi"
+      }
+    ]
+  },
+  {
+    "team_id": 11811,
+    "name": "Monte",
+    "rank": 19,
+    "points": 1558,
+    "streak": 4,
+    "players": [
+      {
+        "id": 17145,
+        "name": "rainwaker"
+      },
+      {
+        "id": 19015,
+        "name": "bymas"
+      },
+      {
+        "id": 19926,
+        "name": "afro"
+      },
+      {
+        "id": 21816,
+        "name": "gizmy"
+      },
+      {
+        "id": 22106,
+        "name": "azuwu"
+      }
+    ]
+  },
+  {
+    "team_id": 4914,
+    "name": "3DMAX",
+    "rank": 20,
+    "points": 1556,
+    "streak": 3,
+    "players": [
+      {
+        "id": 13138,
+        "name": "maka"
+      },
+      {
+        "id": 13497,
+        "name": "lucky"
+      },
+      {
+        "id": 14176,
+        "name": "misutaaa"
+      },
+      {
+        "id": 19739,
+        "name": "ex3rcice"
+      },
+      {
+        "id": 21969,
+        "name": "graviti"
+      }
+    ]
+  },
+  {
+    "team_id": 7175,
+    "name": "HEROIC",
+    "rank": 21,
+    "points": 1496,
+    "streak": -2,
+    "players": [
+      {
+        "id": 19187,
+        "name": "xfl0ud"
+      },
+      {
+        "id": 20119,
+        "name": "nilo"
+      },
+      {
+        "id": 21163,
+        "name": "susp"
+      },
+      {
+        "id": 21983,
+        "name": "chr1zn"
+      },
+      {
+        "id": 22047,
+        "name": "yxngstxr"
+      }
+    ]
+  },
+  {
+    "team_id": 6667,
+    "name": "FaZe",
+    "rank": 22,
+    "points": 1488,
+    "streak": 1,
+    "players": [
+      {
+        "id": 9960,
+        "name": "frozen"
+      },
+      {
+        "id": 10394,
+        "name": "twistzz"
+      },
+      {
+        "id": 18053,
+        "name": "broky"
+      },
+      {
+        "id": 21972,
+        "name": "neityu"
+      },
+      {
+        "id": 22383,
+        "name": "jcobbb"
+      }
+    ]
+  },
+  {
+    "team_id": 7532,
+    "name": "BIG",
+    "rank": 23,
+    "points": 1442,
+    "streak": -1,
+    "players": [
+      {
+        "id": 5794,
+        "name": "tabsen"
+      },
+      {
+        "id": 14932,
+        "name": "faven"
+      },
+      {
+        "id": 15165,
+        "name": "blamef"
+      },
+      {
+        "id": 19284,
+        "name": "prosus"
+      },
+      {
+        "id": 22884,
+        "name": "gr1ks"
+      }
+    ]
+  },
+  {
+    "team_id": 13592,
+    "name": "magic",
+    "rank": 24,
+    "points": 1423,
+    "streak": 5,
+    "players": [
+      {
+        "id": 19874,
+        "name": "masval"
+      },
+      {
+        "id": 22075,
+        "name": "sfade8"
+      },
+      {
+        "id": 22076,
+        "name": "aw"
+      },
+      {
+        "id": 23858,
+        "name": "mo0n"
+      },
+      {
+        "id": 24173,
+        "name": "tenzy"
+      }
+    ]
+  },
+  {
+    "team_id": 4411,
+    "name": "Ninjas in Pyjamas",
+    "rank": 25,
+    "points": 1409,
+    "streak": 3,
+    "players": [
+      {
+        "id": 922,
+        "name": "snappi"
+      },
+      {
+        "id": 10994,
+        "name": "stavn"
+      },
+      {
+        "id": 14148,
+        "name": "sjuush"
+      },
+      {
+        "id": 23372,
+        "name": "xkacpersky"
+      },
+      {
+        "id": 24283,
+        "name": "cairne"
+      }
+    ]
+  },
+  {
+    "team_id": 10577,
+    "name": "SINNERS",
+    "rank": 26,
+    "points": 1396,
+    "streak": 3,
+    "players": [
+      {
+        "id": 11199,
+        "name": "beastik"
+      },
+      {
+        "id": 12810,
+        "name": "shock"
+      },
+      {
+        "id": 21113,
+        "name": "modo"
+      },
+      {
+        "id": 23295,
+        "name": "kisserek"
+      },
+      {
+        "id": 23459,
+        "name": "stressarn"
+      }
+    ]
+  },
+  {
+    "team_id": 13404,
+    "name": "Gentle Mates",
+    "rank": 27,
+    "points": 1391,
+    "streak": 3,
+    "players": [
+      {
+        "id": 8371,
+        "name": "alex"
+      },
+      {
+        "id": 9254,
+        "name": "mopoz"
+      },
+      {
+        "id": 18749,
+        "name": "sausol"
+      },
+      {
+        "id": 19509,
+        "name": "dav1g"
+      },
+      {
+        "id": 21239,
+        "name": "martinezsa"
+      }
+    ]
+  },
+  {
+    "team_id": 9215,
+    "name": "MIBR",
+    "rank": 28,
+    "points": 1390,
+    "streak": 2,
+    "players": [
+      {
+        "id": 19310,
+        "name": "lnz"
+      },
+      {
+        "id": 20987,
+        "name": "brnz4n"
+      },
+      {
+        "id": 21037,
+        "name": "insani"
+      },
+      {
+        "id": 21288,
+        "name": "venomzera"
+      },
+      {
+        "id": 23192,
+        "name": "kl1m"
+      }
+    ]
+  },
+  {
+    "team_id": 12474,
+    "name": "Alliance",
+    "rank": 29,
+    "points": 1379,
+    "streak": -1,
+    "players": [
+      {
+        "id": 7443,
+        "name": "twist"
+      },
+      {
+        "id": 16487,
+        "name": "eraa"
+      },
+      {
+        "id": 22760,
+        "name": "upe"
+      },
+      {
+        "id": 22860,
+        "name": "avid"
+      },
+      {
+        "id": 24083,
+        "name": "mail09"
+      }
+    ]
+  },
+  {
+    "team_id": 12376,
+    "name": "M80",
+    "rank": 30,
+    "points": 1370,
+    "streak": -1,
+    "players": [
+      {
+        "id": 15370,
+        "name": "slaxz"
+      },
+      {
+        "id": 16599,
+        "name": "swisher"
+      },
+      {
+        "id": 20104,
+        "name": "s1n"
+      },
+      {
+        "id": 21665,
+        "name": "jba"
+      },
+      {
+        "id": 22921,
+        "name": "lake"
+      }
+    ]
+  },
+  {
+    "team_id": 12257,
+    "name": "Wildcard",
+    "rank": 31,
+    "points": 1363,
+    "streak": -1,
+    "players": [
+      {
+        "id": 8311,
+        "name": "nemanha"
+      },
+      {
+        "id": 16847,
+        "name": "mhl"
+      },
+      {
+        "id": 17353,
+        "name": "cxzi"
+      },
+      {
+        "id": 17378,
+        "name": "reck"
+      },
+      {
+        "id": 18838,
+        "name": "hext"
+      }
+    ]
+  },
+  {
+    "team_id": 11737,
+    "name": "EYEBALLERS",
+    "rank": 32,
+    "points": 1362,
+    "streak": -1,
+    "players": [
+      {
+        "id": 3849,
+        "name": "jw"
+      },
+      {
+        "id": 20879,
+        "name": "maxster"
+      },
+      {
+        "id": 21012,
+        "name": "ro1f"
+      },
+      {
+        "id": 21159,
+        "name": "bobeksde"
+      },
+      {
+        "id": 22914,
+        "name": "dex"
+      }
+    ]
+  },
+  {
+    "team_id": 13355,
+    "name": "Nemesis",
+    "rank": 33,
+    "points": 1359,
+    "streak": -1,
+    "players": [
+      {
+        "id": 18670,
+        "name": "sellter"
+      },
+      {
+        "id": 20709,
+        "name": "r3salt"
+      },
+      {
+        "id": 22536,
+        "name": "mag1k3y"
+      },
+      {
+        "id": 22930,
+        "name": "tex1y"
+      },
+      {
+        "id": 23047,
+        "name": "sdaim"
+      }
+    ]
+  },
+  {
+    "team_id": 4863,
+    "name": "TYLOO",
+    "rank": 34,
+    "points": 1353,
+    "streak": -1,
+    "players": [
+      {
+        "id": 19645,
+        "name": "jamyoung"
+      },
+      {
+        "id": 20702,
+        "name": "jee"
+      },
+      {
+        "id": 20895,
+        "name": "mercury"
+      },
+      {
+        "id": 21621,
+        "name": "moseyuh"
+      },
+      {
+        "id": 24857,
+        "name": "zero"
+      }
+    ]
+  },
+  {
+    "team_id": 13679,
+    "name": "FOKUS",
+    "rank": 35,
+    "points": 1350,
+    "streak": 1,
+    "players": [
+      {
+        "id": 16486,
+        "name": "ztr"
+      },
+      {
+        "id": 20358,
+        "name": "volt"
+      },
+      {
+        "id": 20625,
+        "name": "banjo"
+      },
+      {
+        "id": 24203,
+        "name": "jorko"
+      },
+      {
+        "id": 24332,
+        "name": "matheos"
+      }
+    ]
+  },
+  {
+    "team_id": 7969,
+    "name": "Nemiga",
+    "rank": 35,
+    "points": 1350,
+    "streak": 2,
+    "players": [
+      {
+        "id": 19920,
+        "name": "kair0n"
+      },
+      {
+        "id": 21266,
+        "name": "1eer"
+      },
+      {
+        "id": 22325,
+        "name": "sowalio"
+      },
+      {
+        "id": 23317,
+        "name": "khan"
+      },
+      {
+        "id": 23319,
+        "name": "syph0"
+      }
+    ]
+  },
+  {
+    "team_id": 6673,
+    "name": "NRG",
+    "rank": 37,
+    "points": 1337,
+    "streak": -1,
+    "players": [
+      {
+        "id": 7687,
+        "name": "nitr0"
+      },
+      {
+        "id": 8711,
+        "name": "sonic"
+      },
+      {
+        "id": 13249,
+        "name": "osee"
+      },
+      {
+        "id": 13578,
+        "name": "grim"
+      },
+      {
+        "id": 16717,
+        "name": "br0"
+      }
+    ]
+  },
+  {
+    "team_id": 8840,
+    "name": "Lynn Vision",
+    "rank": 38,
+    "points": 1333,
+    "streak": 1,
+    "players": [
+      {
+        "id": 16551,
+        "name": "westmelon"
+      },
+      {
+        "id": 18744,
+        "name": "z4kr"
+      },
+      {
+        "id": 20254,
+        "name": "starry"
+      },
+      {
+        "id": 22922,
+        "name": "emiliaqaq"
+      },
+      {
+        "id": 23100,
+        "name": "c4llm3su3"
+      }
+    ]
+  },
+  {
+    "team_id": 11581,
+    "name": "HOTU",
+    "rank": 39,
+    "points": 1327,
+    "streak": 1,
+    "players": [
+      {
+        "id": 16612,
+        "name": "n0rb3r7"
+      },
+      {
+        "id": 18752,
+        "name": "kade0"
+      },
+      {
+        "id": 21385,
+        "name": "mizu"
+      },
+      {
+        "id": 21387,
+        "name": "gokushima"
+      },
+      {
+        "id": 24806,
+        "name": "frontales"
+      }
+    ]
+  },
+  {
+    "team_id": 8113,
+    "name": "Sharks",
+    "rank": 40,
+    "points": 1324,
+    "streak": 7,
+    "players": [
+      {
+        "id": 20558,
+        "name": "gafolo"
+      },
+      {
+        "id": 21170,
+        "name": "koala"
+      },
+      {
+        "id": 21221,
+        "name": "maxxkor"
+      },
+      {
+        "id": 21921,
+        "name": "rdnzao"
+      },
+      {
+        "id": 22911,
+        "name": "doc"
+      }
+    ]
+  },
+  {
+    "team_id": 12144,
+    "name": "BESTIA",
+    "rank": 41,
+    "points": 1309,
+    "streak": -2,
+    "players": [
+      {
+        "id": 19985,
+        "name": "nacho"
+      },
+      {
+        "id": 20185,
+        "name": "cass1n"
+      },
+      {
+        "id": 20607,
+        "name": "buda"
+      },
+      {
+        "id": 22570,
+        "name": "tomaszin"
+      },
+      {
+        "id": 24863,
+        "name": "timo"
+      }
+    ]
+  },
+  {
+    "team_id": 11571,
+    "name": "Gaimin Gladiators",
+    "rank": 41,
+    "points": 1309,
+    "streak": 5,
+    "players": [
+      {
+        "id": 8565,
+        "name": "hen1"
+      },
+      {
+        "id": 9219,
+        "name": "felps"
+      },
+      {
+        "id": 9482,
+        "name": "nekiz"
+      },
+      {
+        "id": 15914,
+        "name": "luken"
+      },
+      {
+        "id": 17861,
+        "name": "jota"
+      }
+    ]
+  },
+  {
+    "team_id": 12895,
+    "name": "K27",
+    "rank": 43,
+    "points": 1305,
+    "streak": -2,
+    "players": [
+      {
+        "id": 19575,
+        "name": "x5g7v"
+      },
+      {
+        "id": 20101,
+        "name": "fame"
+      },
+      {
+        "id": 22886,
+        "name": "xeedo"
+      },
+      {
+        "id": 23686,
+        "name": "kashl1d"
+      },
+      {
+        "id": 24725,
+        "name": "qw1nk1"
+      }
+    ]
+  },
+  {
+    "team_id": 5973,
+    "name": "Liquid",
+    "rank": 44,
+    "points": 1291,
+    "streak": -1,
+    "players": [
+      {
+        "id": 8520,
+        "name": "naf"
+      },
+      {
+        "id": 8738,
+        "name": "elige"
+      },
+      {
+        "id": 11617,
+        "name": "malbsmd"
+      },
+      {
+        "id": 16820,
+        "name": "siuhy"
+      },
+      {
+        "id": 21763,
+        "name": "ultimate"
+      }
+    ]
+  },
+  {
+    "team_id": 8474,
+    "name": "100 Thieves",
+    "rank": 45,
+    "points": 1288,
+    "streak": -1,
+    "players": [
+      {
+        "id": 7592,
+        "name": "device"
+      },
+      {
+        "id": 8183,
+        "name": "rain"
+      },
+      {
+        "id": 21014,
+        "name": "ag1l"
+      },
+      {
+        "id": 22695,
+        "name": "sirah"
+      },
+      {
+        "id": 23397,
+        "name": "poiii"
+      }
+    ]
+  },
+  {
+    "team_id": 13808,
+    "name": "Walczaki",
+    "rank": 46,
+    "points": 1282,
+    "streak": 3,
+    "players": [
+      {
+        "id": 15203,
+        "name": "reiko"
+      },
+      {
+        "id": 20245,
+        "name": "samey"
+      },
+      {
+        "id": 20958,
+        "name": "bajmi"
+      },
+      {
+        "id": 21263,
+        "name": "olimp"
+      },
+      {
+        "id": 22703,
+        "name": "moonwalk"
+      }
+    ]
+  },
+  {
+    "team_id": 10245,
+    "name": "JiJieHao",
+    "rank": 47,
+    "points": 1281,
+    "streak": 2,
+    "players": [
+      {
+        "id": 17675,
+        "name": "m1n1"
+      },
+      {
+        "id": 18120,
+        "name": "sinnopsyy"
+      },
+      {
+        "id": 18163,
+        "name": "bibu"
+      },
+      {
+        "id": 18790,
+        "name": "cacanito"
+      },
+      {
+        "id": 22419,
+        "name": "0samas"
+      }
+    ]
+  },
+  {
+    "team_id": 12426,
+    "name": "Passion UA",
+    "rank": 48,
+    "points": 1266,
+    "streak": 1,
+    "players": [
+      {
+        "id": 11630,
+        "name": "jt"
+      },
+      {
+        "id": 12731,
+        "name": "sdy"
+      },
+      {
+        "id": 19869,
+        "name": "try"
+      },
+      {
+        "id": 21452,
+        "name": "kvem"
+      },
+      {
+        "id": 21620,
+        "name": "nicx"
+      }
+    ]
+  },
+  {
+    "team_id": 13501,
+    "name": "illwill",
+    "rank": 49,
+    "points": 1264,
+    "streak": 3,
+    "players": [
+      {
+        "id": 9656,
+        "name": "hadji"
+      },
+      {
+        "id": 11777,
+        "name": "maden"
+      },
+      {
+        "id": 16885,
+        "name": "woro2k"
+      },
+      {
+        "id": 17147,
+        "name": "juanflatroo"
+      },
+      {
+        "id": 20889,
+        "name": "7kick"
+      }
+    ]
+  },
+  {
+    "team_id": 13499,
+    "name": "Voca",
+    "rank": 50,
+    "points": 1257,
+    "streak": -1,
+    "players": [
+      {
+        "id": 14494,
+        "name": "junior"
+      },
+      {
+        "id": 17918,
+        "name": "nosrac"
+      },
+      {
+        "id": 19709,
+        "name": "shane"
+      },
+      {
+        "id": 19711,
+        "name": "snav"
+      },
+      {
+        "id": 20333,
+        "name": "jeorge"
+      }
+    ]
+  },
+  {
+    "team_id": 10823,
+    "name": "INFINITE",
+    "rank": 51,
+    "points": 1248,
+    "streak": 2,
+    "players": [
+      {
+        "id": 9911,
+        "name": "kreaz"
+      },
+      {
+        "id": 12945,
+        "name": "blytz"
+      },
+      {
+        "id": 19171,
+        "name": "mhn1"
+      },
+      {
+        "id": 19815,
+        "name": "dytor"
+      },
+      {
+        "id": 20870,
+        "name": "sl3nd"
+      }
+    ]
+  },
+  {
+    "team_id": 13027,
+    "name": "Nuclear TigeRES",
+    "rank": 52,
+    "points": 1245,
+    "streak": -1,
+    "players": [
+      {
+        "id": 22878,
+        "name": "senka"
+      },
+      {
+        "id": 22880,
+        "name": "m1quse"
+      },
+      {
+        "id": 23762,
+        "name": "z1k4"
+      },
+      {
+        "id": 24568,
+        "name": "flouzer"
+      },
+      {
+        "id": 25807,
+        "name": "ayuki"
+      }
+    ]
+  },
+  {
+    "team_id": 4602,
+    "name": "Tricked",
+    "rank": 53,
+    "points": 1235,
+    "streak": 1,
+    "players": [
+      {
+        "id": 16731,
+        "name": "iceberg"
+      },
+      {
+        "id": 21379,
+        "name": "salazar"
+      },
+      {
+        "id": 21571,
+        "name": "leakz"
+      },
+      {
+        "id": 21574,
+        "name": "boye"
+      },
+      {
+        "id": 24104,
+        "name": "nickyb"
+      }
+    ]
+  },
+  {
+    "team_id": 13486,
+    "name": "THUNDER dOWNUNDER",
+    "rank": 54,
+    "points": 1231,
+    "streak": 4,
+    "players": [
+      {
+        "id": 9115,
+        "name": "dexter"
+      },
+      {
+        "id": 10588,
+        "name": "liazz"
+      },
+      {
+        "id": 11139,
+        "name": "alistair"
+      },
+      {
+        "id": 18545,
+        "name": "asap"
+      },
+      {
+        "id": 20527,
+        "name": "tjp"
+      }
+    ]
+  },
+  {
+    "team_id": 10621,
+    "name": "1win",
+    "rank": 55,
+    "points": 1230,
+    "streak": -1,
+    "players": [
+      {
+        "id": 20700,
+        "name": "lattykk"
+      },
+      {
+        "id": 23477,
+        "name": "reyoz"
+      },
+      {
+        "id": 23770,
+        "name": "cronuss"
+      },
+      {
+        "id": 23771,
+        "name": "oz1k"
+      },
+      {
+        "id": 24923,
+        "name": "nbl"
+      }
+    ]
+  },
+  {
+    "team_id": 11712,
+    "name": "Sashi",
+    "rank": 56,
+    "points": 1221,
+    "streak": 1,
+    "players": [
+      {
+        "id": 10330,
+        "name": "acor"
+      },
+      {
+        "id": 16723,
+        "name": "cabbi"
+      },
+      {
+        "id": 20090,
+        "name": "zyphon"
+      },
+      {
+        "id": 21199,
+        "name": "mistr"
+      },
+      {
+        "id": 23338,
+        "name": "beccie"
+      }
+    ]
+  },
+  {
+    "team_id": 12959,
+    "name": "ShindeN",
+    "rank": 57,
+    "points": 1215,
+    "streak": -1,
+    "players": [
+      {
+        "id": 15221,
+        "name": "peqexino"
+      },
+      {
+        "id": 18554,
+        "name": "tom1jed"
+      },
+      {
+        "id": 20451,
+        "name": "abizz"
+      },
+      {
+        "id": 20992,
+        "name": "ivz"
+      },
+      {
+        "id": 21155,
+        "name": "naz"
+      },
+      {
+        "id": 24749,
+        "name": "fraguty"
+      }
+    ]
+  },
+  {
+    "team_id": 13644,
+    "name": "TDK",
+    "rank": 58,
+    "points": 1208,
+    "streak": 2,
+    "players": [
+      {
+        "id": 16555,
+        "name": "ax1le"
+      },
+      {
+        "id": 16921,
+        "name": "nafany"
+      },
+      {
+        "id": 18510,
+        "name": "sugar"
+      },
+      {
+        "id": 20387,
+        "name": "xant3r"
+      },
+      {
+        "id": 21348,
+        "name": "artfr0st"
+      }
+    ]
+  },
+  {
+    "team_id": 11251,
+    "name": "Eternal Fire",
+    "rank": 58,
+    "points": 1208,
+    "streak": 3,
+    "players": [
+      {
+        "id": 12708,
+        "name": "rigon"
+      },
+      {
+        "id": 16811,
+        "name": "mistem"
+      },
+      {
+        "id": 19733,
+        "name": "demqq"
+      },
+      {
+        "id": 20123,
+        "name": "regali"
+      },
+      {
+        "id": 22361,
+        "name": "jottaaa"
+      }
+    ]
+  },
+  {
+    "team_id": 13117,
+    "name": "Inner Circle",
+    "rank": 60,
+    "points": 1207,
+    "streak": 5,
+    "players": [
+      {
+        "id": 16147,
+        "name": "cptkurtka023"
+      },
+      {
+        "id": 19592,
+        "name": "headtr1ck"
+      },
+      {
+        "id": 23415,
+        "name": "zerrofix"
+      },
+      {
+        "id": 24168,
+        "name": "onic"
+      },
+      {
+        "id": 24282,
+        "name": "dawy"
+      }
+    ]
+  },
+  {
+    "team_id": 13724,
+    "name": "5star",
+    "rank": 61,
+    "points": 1195,
+    "streak": 2,
+    "players": [
+      {
+        "id": 15060,
+        "name": "neuz"
+      },
+      {
+        "id": 15861,
+        "name": "rate"
+      },
+      {
+        "id": 18150,
+        "name": "clouden"
+      },
+      {
+        "id": 21396,
+        "name": "ariucle"
+      },
+      {
+        "id": 24303,
+        "name": "hoolig4n"
+      }
+    ]
+  },
+  {
+    "team_id": 13619,
+    "name": "BET-M",
+    "rank": 62,
+    "points": 1186,
+    "streak": 2,
+    "players": [
+      {
+        "id": 3459,
+        "name": "kinqie"
+      },
+      {
+        "id": 20534,
+        "name": "kiro"
+      },
+      {
+        "id": 22040,
+        "name": "z1nny"
+      },
+      {
+        "id": 22927,
+        "name": "executor"
+      },
+      {
+        "id": 23302,
+        "name": "bluewh1te"
+      }
+    ]
+  },
+  {
+    "team_id": 7176,
+    "name": "RED Canids",
+    "rank": 63,
+    "points": 1182,
+    "streak": 1,
+    "players": [
+      {
+        "id": 18865,
+        "name": "dav1deus"
+      },
+      {
+        "id": 19750,
+        "name": "drop"
+      },
+      {
+        "id": 20026,
+        "name": "chayjesus"
+      },
+      {
+        "id": 20085,
+        "name": "kauez"
+      },
+      {
+        "id": 25777,
+        "name": "rentu"
+      }
+    ]
+  },
+  {
+    "team_id": 10459,
+    "name": "ARCRED",
+    "rank": 64,
+    "points": 1178,
+    "streak": -1,
+    "players": [
+      {
+        "id": 18447,
+        "name": "dssj"
+      },
+      {
+        "id": 18671,
+        "name": "get-jeka"
+      },
+      {
+        "id": 19703,
+        "name": "ryujin"
+      },
+      {
+        "id": 20207,
+        "name": "raijin"
+      },
+      {
+        "id": 20402,
+        "name": "synyx"
+      }
+    ]
+  },
+  {
+    "team_id": 12380,
+    "name": "CYBERSHOKE",
+    "rank": 64,
+    "points": 1178,
+    "streak": 1,
+    "players": [
+      {
+        "id": 17508,
+        "name": "glowiing"
+      },
+      {
+        "id": 20430,
+        "name": "alpha"
+      },
+      {
+        "id": 22803,
+        "name": "bl1x1"
+      },
+      {
+        "id": 24176,
+        "name": "mokuj1n"
+      },
+      {
+        "id": 24569,
+        "name": "fluffy"
+      }
+    ]
+  },
+  {
+    "team_id": 9455,
+    "name": "Imperial",
+    "rank": 66,
+    "points": 1174,
+    "streak": -1,
+    "players": [
+      {
+        "id": 10566,
+        "name": "chelo"
+      },
+      {
+        "id": 12822,
+        "name": "vini"
+      },
+      {
+        "id": 20183,
+        "name": "decenty"
+      },
+      {
+        "id": 22371,
+        "name": "levi"
+      },
+      {
+        "id": 22564,
+        "name": "noway"
+      }
+    ]
+  },
+  {
+    "team_id": 12510,
+    "name": "The Huns",
+    "rank": 67,
+    "points": 1173,
+    "streak": 1,
+    "players": [
+      {
+        "id": 15072,
+        "name": "nin9"
+      },
+      {
+        "id": 18638,
+        "name": "sk0r"
+      },
+      {
+        "id": 19957,
+        "name": "bart4k"
+      },
+      {
+        "id": 20703,
+        "name": "xerolte"
+      },
+      {
+        "id": 21398,
+        "name": "controlez"
+      }
+    ]
+  },
+  {
+    "team_id": 12604,
+    "name": "Johnny Speeds",
+    "rank": 68,
+    "points": 1171,
+    "streak": 1,
+    "players": [
+      {
+        "id": 9261,
+        "name": "lekr0"
+      },
+      {
+        "id": 13670,
+        "name": "nawwk"
+      },
+      {
+        "id": 15569,
+        "name": "sapec"
+      },
+      {
+        "id": 16029,
+        "name": "heap"
+      },
+      {
+        "id": 22759,
+        "name": "jocab"
+      }
+    ]
+  },
+  {
+    "team_id": 9686,
+    "name": "Turma do Pagode",
+    "rank": 69,
+    "points": 1168,
+    "streak": 4,
+    "players": [
+      {
+        "id": 9219,
+        "name": "felps"
+      },
+      {
+        "id": 14390,
+        "name": "wood7"
+      },
+      {
+        "id": 17181,
+        "name": "naitte"
+      },
+      {
+        "id": 17553,
+        "name": "pesadelo"
+      },
+      {
+        "id": 22182,
+        "name": "ksloks"
+      }
+    ]
+  },
+  {
+    "team_id": 12774,
+    "name": "FlyQuest",
+    "rank": 70,
+    "points": 1165,
+    "streak": 5,
+    "players": [
+      {
+        "id": 4679,
+        "name": "jks"
+      },
+      {
+        "id": 11140,
+        "name": "ins"
+      },
+      {
+        "id": 17384,
+        "name": "vexite"
+      },
+      {
+        "id": 18214,
+        "name": "nettik"
+      },
+      {
+        "id": 20462,
+        "name": "story"
+      }
+    ]
+  },
+  {
+    "team_id": 13237,
+    "name": "AM",
+    "rank": 71,
+    "points": 1162,
+    "streak": 1,
+    "players": [
+      {
+        "id": 12781,
+        "name": "k1to"
+      },
+      {
+        "id": 16705,
+        "name": "altekz"
+      },
+      {
+        "id": 20170,
+        "name": "kyuubii"
+      },
+      {
+        "id": 21164,
+        "name": "l00m1"
+      },
+      {
+        "id": 21233,
+        "name": "myltsi"
+      }
+    ]
+  },
+  {
+    "team_id": 9621,
+    "name": "AaB",
+    "rank": 72,
+    "points": 1149,
+    "streak": -3,
+    "players": [
+      {
+        "id": 16753,
+        "name": "n1xen"
+      },
+      {
+        "id": 20033,
+        "name": "maze"
+      },
+      {
+        "id": 22948,
+        "name": "anber"
+      },
+      {
+        "id": 24113,
+        "name": "ssen"
+      },
+      {
+        "id": 24425,
+        "name": "bekker"
+      }
+    ]
+  },
+  {
+    "team_id": 12967,
+    "name": "WW",
+    "rank": 73,
+    "points": 1147,
+    "streak": 2,
+    "players": [
+      {
+        "id": 20113,
+        "name": "deko"
+      },
+      {
+        "id": 20357,
+        "name": "d1ledez"
+      },
+      {
+        "id": 21690,
+        "name": "strogo"
+      },
+      {
+        "id": 22350,
+        "name": "ct0m"
+      },
+      {
+        "id": 23048,
+        "name": "kelien"
+      }
+    ]
+  },
+  {
+    "team_id": 13667,
+    "name": "NEXVOID",
+    "rank": 74,
+    "points": 1143,
+    "streak": -1,
+    "players": [
+      {
+        "id": 11141,
+        "name": "erkast"
+      },
+      {
+        "id": 21828,
+        "name": "sergelen19k"
+      },
+      {
+        "id": 22333,
+        "name": "miq"
+      },
+      {
+        "id": 22415,
+        "name": "accuracytg"
+      },
+      {
+        "id": 23457,
+        "name": "zesta"
+      }
+    ]
+  },
+  {
+    "team_id": 13518,
+    "name": "Acend",
+    "rank": 75,
+    "points": 1140,
+    "streak": 2,
+    "players": [
+      {
+        "id": 11217,
+        "name": "spellan"
+      },
+      {
+        "id": 15369,
+        "name": "redstar"
+      },
+      {
+        "id": 15385,
+        "name": "kaluber"
+      },
+      {
+        "id": 20097,
+        "name": "h4rn"
+      },
+      {
+        "id": 21657,
+        "name": "skrimo"
+      }
+    ]
+  },
+  {
+    "team_id": 13214,
+    "name": "SPARTA",
+    "rank": 76,
+    "points": 1138,
+    "streak": 1,
+    "players": [
+      {
+        "id": 11498,
+        "name": "nickelback"
+      },
+      {
+        "id": 13240,
+        "name": "lack1"
+      },
+      {
+        "id": 13281,
+        "name": "el1an"
+      },
+      {
+        "id": 13982,
+        "name": "forester"
+      },
+      {
+        "id": 16948,
+        "name": "travis"
+      }
+    ]
+  },
+  {
+    "team_id": 13814,
+    "name": "INOX Division",
+    "rank": 77,
+    "points": 1135,
+    "streak": -1,
+    "players": [
+      {
+        "id": 22430,
+        "name": "k0s"
+      },
+      {
+        "id": 22879,
+        "name": "fenomen"
+      },
+      {
+        "id": 22883,
+        "name": "k1slll"
+      },
+      {
+        "id": 22961,
+        "name": "finw"
+      },
+      {
+        "id": 25423,
+        "name": "gooddeph"
+      }
+    ]
+  },
+  {
+    "team_id": 10503,
+    "name": "OG",
+    "rank": 78,
+    "points": 1134,
+    "streak": -1,
+    "players": [
+      {
+        "id": 7964,
+        "name": "cadian"
+      },
+      {
+        "id": 8374,
+        "name": "bodyy"
+      },
+      {
+        "id": 19064,
+        "name": "spooke"
+      },
+      {
+        "id": 20465,
+        "name": "arrozdoce"
+      },
+      {
+        "id": 20878,
+        "name": "adamb"
+      }
+    ]
+  },
+  {
+    "team_id": 12609,
+    "name": "Lavked",
+    "rank": 79,
+    "points": 1132,
+    "streak": 2,
+    "players": [
+      {
+        "id": 20199,
+        "name": "sol"
+      },
+      {
+        "id": 21369,
+        "name": "1nvisiblee"
+      },
+      {
+        "id": 24114,
+        "name": "xm1nd"
+      },
+      {
+        "id": 24171,
+        "name": "djon8"
+      },
+      {
+        "id": 24818,
+        "name": "k4nfuz"
+      }
+    ]
+  },
+  {
+    "team_id": 12646,
+    "name": "Chinggis Warriors",
+    "rank": 80,
+    "points": 1129,
+    "streak": 2,
+    "players": [
+      {
+        "id": 12956,
+        "name": "hasteka"
+      },
+      {
+        "id": 19229,
+        "name": "roux"
+      },
+      {
+        "id": 19536,
+        "name": "yami"
+      },
+      {
+        "id": 22414,
+        "name": "efire"
+      },
+      {
+        "id": 25510,
+        "name": "tikuak"
+      }
+    ]
+  },
+  {
+    "team_id": 4991,
+    "name": "fnatic",
+    "rank": 81,
+    "points": 1118,
+    "streak": 1,
+    "players": [
+      {
+        "id": 7528,
+        "name": "krimz"
+      },
+      {
+        "id": 17803,
+        "name": "fear"
+      },
+      {
+        "id": 23046,
+        "name": "jambo"
+      },
+      {
+        "id": 23414,
+        "name": "jackasmo"
+      },
+      {
+        "id": 24914,
+        "name": "br4tko"
+      }
+    ]
+  },
+  {
+    "team_id": 11837,
+    "name": "Fluxo",
+    "rank": 82,
+    "points": 1117,
+    "streak": -2,
+    "players": [
+      {
+        "id": 11154,
+        "name": "exit"
+      },
+      {
+        "id": 18717,
+        "name": "lucaozy"
+      },
+      {
+        "id": 19692,
+        "name": "zevy"
+      },
+      {
+        "id": 20385,
+        "name": "kye"
+      },
+      {
+        "id": 21286,
+        "name": "mlhzin"
+      }
+    ]
+  },
+  {
+    "team_id": 13124,
+    "name": "Marsborne",
+    "rank": 83,
+    "points": 1114,
+    "streak": -3,
+    "players": [
+      {
+        "id": 18706,
+        "name": "freshie"
+      },
+      {
+        "id": 22069,
+        "name": "grizz"
+      },
+      {
+        "id": 22967,
+        "name": "ogwizard"
+      },
+      {
+        "id": 24890,
+        "name": "marekiew"
+      },
+      {
+        "id": 25524,
+        "name": "wumbo"
+      }
+    ]
+  },
+  {
+    "team_id": 11419,
+    "name": "ECSTATIC",
+    "rank": 84,
+    "points": 1113,
+    "streak": 1,
+    "players": [
+      {
+        "id": 11995,
+        "name": "tmb"
+      },
+      {
+        "id": 13602,
+        "name": "nicoodoz"
+      },
+      {
+        "id": 20417,
+        "name": "anlelele"
+      },
+      {
+        "id": 20941,
+        "name": "buzz"
+      },
+      {
+        "id": 21779,
+        "name": "nut-nut"
+      }
+    ]
+  },
+  {
+    "team_id": 13617,
+    "name": "ex-RUBY",
+    "rank": 85,
+    "points": 1107,
+    "streak": 2,
+    "players": [
+      {
+        "id": 20504,
+        "name": "yumsan"
+      },
+      {
+        "id": 22189,
+        "name": "h4san4tor"
+      },
+      {
+        "id": 22459,
+        "name": "sh1nejezzz"
+      },
+      {
+        "id": 22864,
+        "name": "robo"
+      },
+      {
+        "id": 23684,
+        "name": "relaxxie"
+      }
+    ]
+  },
+  {
+    "team_id": 10278,
+    "name": "9INE",
+    "rank": 86,
+    "points": 1102,
+    "streak": 1,
+    "players": [
+      {
+        "id": 2898,
+        "name": "raalz"
+      },
+      {
+        "id": 19698,
+        "name": "adams"
+      },
+      {
+        "id": 20300,
+        "name": "kraghen"
+      },
+      {
+        "id": 21710,
+        "name": "notineki"
+      },
+      {
+        "id": 21715,
+        "name": "flayy"
+      }
+    ]
+  },
+  {
+    "team_id": 12901,
+    "name": "SemperFi",
+    "rank": 87,
+    "points": 1101,
+    "streak": -2,
+    "players": [
+      {
+        "id": 14294,
+        "name": "hazr"
+      },
+      {
+        "id": 14990,
+        "name": "keen"
+      },
+      {
+        "id": 20003,
+        "name": "shadiy"
+      },
+      {
+        "id": 20244,
+        "name": "savage"
+      },
+      {
+        "id": 20881,
+        "name": "sliimey"
+      }
+    ]
+  },
+  {
+    "team_id": 12916,
+    "name": "Betclic",
+    "rank": 88,
+    "points": 1094,
+    "streak": -1,
+    "players": [
+      {
+        "id": 16848,
+        "name": "hades"
+      },
+      {
+        "id": 18070,
+        "name": "demho"
+      },
+      {
+        "id": 18979,
+        "name": "prism"
+      },
+      {
+        "id": 20092,
+        "name": "bogdan"
+      },
+      {
+        "id": 25542,
+        "name": "dr3nquu"
+      }
+    ]
+  },
+  {
+    "team_id": 12776,
+    "name": "Bounty Hunters",
+    "rank": 89,
+    "points": 1090,
+    "streak": -1,
+    "players": [
+      {
+        "id": 16835,
+        "name": "ponter"
+      },
+      {
+        "id": 18322,
+        "name": "kaiser"
+      },
+      {
+        "id": 20690,
+        "name": "zock"
+      },
+      {
+        "id": 20885,
+        "name": "freq"
+      },
+      {
+        "id": 23461,
+        "name": "pepe"
+      }
+    ]
+  },
+  {
+    "team_id": 10333,
+    "name": "Sangal",
+    "rank": 90,
+    "points": 1087,
+    "streak": -1,
+    "players": [
+      {
+        "id": 11271,
+        "name": "smooya"
+      },
+      {
+        "id": 12004,
+        "name": "clax"
+      },
+      {
+        "id": 18571,
+        "name": "cypher"
+      },
+      {
+        "id": 19673,
+        "name": "patsi"
+      },
+      {
+        "id": 21139,
+        "name": "pr1metapz"
+      }
+    ]
+  },
+  {
+    "team_id": 11641,
+    "name": "Metizport",
+    "rank": 90,
+    "points": 1087,
+    "streak": 3,
+    "players": [
+      {
+        "id": 8507,
+        "name": "stanislaw"
+      },
+      {
+        "id": 14218,
+        "name": "plopski"
+      },
+      {
+        "id": 17937,
+        "name": "isak"
+      },
+      {
+        "id": 19044,
+        "name": "f1ku"
+      },
+      {
+        "id": 19069,
+        "name": "forsyy"
+      }
+    ]
+  },
+  {
+    "team_id": 13314,
+    "name": "KOLESIE",
+    "rank": 92,
+    "points": 1081,
+    "streak": -1,
+    "players": [
+      {
+        "id": 3669,
+        "name": "innocent"
+      },
+      {
+        "id": 20018,
+        "name": "fr3nd"
+      },
+      {
+        "id": 20637,
+        "name": "b1elany"
+      },
+      {
+        "id": 20960,
+        "name": "ex1st"
+      },
+      {
+        "id": 22473,
+        "name": "qlocuu"
+      }
+    ]
+  },
+  {
+    "team_id": 12878,
+    "name": "BC.Game",
+    "rank": 93,
+    "points": 1077,
+    "streak": -1,
+    "players": [
+      {
+        "id": 7998,
+        "name": "s1mple"
+      },
+      {
+        "id": 8212,
+        "name": "scrunk"
+      },
+      {
+        "id": 8918,
+        "name": "electronic"
+      },
+      {
+        "id": 20903,
+        "name": "senzu"
+      },
+      {
+        "id": 23140,
+        "name": "krazy"
+      }
+    ]
+  },
+  {
+    "team_id": 13553,
+    "name": "Oxuji",
+    "rank": 94,
+    "points": 1076,
+    "streak": 1,
+    "players": [
+      {
+        "id": 20621,
+        "name": "nitzie"
+      },
+      {
+        "id": 21192,
+        "name": "zealot"
+      },
+      {
+        "id": 21365,
+        "name": "k1ssly"
+      },
+      {
+        "id": 25608,
+        "name": "ayano"
+      },
+      {
+        "id": 25609,
+        "name": "heckbnk"
+      }
+    ]
+  },
+  {
+    "team_id": 12677,
+    "name": "Galorys",
+    "rank": 94,
+    "points": 1076,
+    "streak": -1,
+    "players": [
+      {
+        "id": 9483,
+        "name": "destiny"
+      },
+      {
+        "id": 18743,
+        "name": "nython"
+      },
+      {
+        "id": 20522,
+        "name": "gbb"
+      },
+      {
+        "id": 23551,
+        "name": "tomate"
+      },
+      {
+        "id": 24715,
+        "name": "k1not1"
+      }
+    ]
+  },
+  {
+    "team_id": 12769,
+    "name": "Fisher College",
+    "rank": 96,
+    "points": 1074,
+    "streak": 0,
+    "players": [
+      {
+        "id": 11940,
+        "name": "nealan"
+      },
+      {
+        "id": 12793,
+        "name": "th0r"
+      },
+      {
+        "id": 13298,
+        "name": "aleks"
+      },
+      {
+        "id": 20429,
+        "name": "crepow"
+      },
+      {
+        "id": 22137,
+        "name": "corn"
+      }
+    ]
+  },
+  {
+    "team_id": 13304,
+    "name": "LP",
+    "rank": 97,
+    "points": 1072,
+    "streak": -1,
+    "players": [
+      {
+        "id": 14010,
+        "name": "zmb"
+      },
+      {
+        "id": 17132,
+        "name": "leomonster"
+      },
+      {
+        "id": 20521,
+        "name": "alisson"
+      },
+      {
+        "id": 21284,
+        "name": "happ"
+      },
+      {
+        "id": 23550,
+        "name": "divine"
+      }
+    ]
+  },
+  {
+    "team_id": 13799,
+    "name": "PsychoFace",
+    "rank": 98,
+    "points": 1063,
+    "streak": -1,
+    "players": [
+      {
+        "id": 8726,
+        "name": "facecrack"
+      },
+      {
+        "id": 20883,
+        "name": "eightz999"
+      },
+      {
+        "id": 21445,
+        "name": "abiraju"
+      },
+      {
+        "id": 23835,
+        "name": "psychodoctor"
+      },
+      {
+        "id": 24807,
+        "name": "slaxejezzz"
+      }
+    ]
+  },
+  {
+    "team_id": 13231,
+    "name": "Ursa",
+    "rank": 99,
+    "points": 1060,
+    "streak": -4,
+    "players": [
+      {
+        "id": 21513,
+        "name": "4x1s"
+      },
+      {
+        "id": 22460,
+        "name": "riskyb0b"
+      },
+      {
+        "id": 22676,
+        "name": "karnez"
+      },
+      {
+        "id": 23764,
+        "name": "alv"
+      },
+      {
+        "id": 25349,
+        "name": "salazar"
+      }
+    ]
+  },
+  {
+    "team_id": 11514,
+    "name": "Rare Atom",
+    "rank": 100,
+    "points": 1054,
+    "streak": 4,
+    "players": [
+      {
+        "id": 7028,
+        "name": "summer"
+      },
+      {
+        "id": 20808,
+        "name": "tiger"
+      },
+      {
+        "id": 21825,
+        "name": "l1hang"
+      },
+      {
+        "id": 22998,
+        "name": "x9"
+      },
+      {
+        "id": 24304,
+        "name": "chengking"
+      }
+    ]
+  }
+]

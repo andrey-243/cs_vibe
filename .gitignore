@@ -1,0 +1,23 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+
+# Claude
+.claude/
+
+# Design files
+from_claude_design/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+data_pipeline/csgo_opening/
+
+# Node
+node_modules/
+.next/
+frontend/.next/
+frontend/tsconfig.tsbuildinfo

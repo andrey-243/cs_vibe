@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+:root {
+  /* Base backgrounds */
+  --bg0: #0a0a0d;
+  --bg1: #14141c;
+  --bg2: #1c1c2a;
+
+  /* Surfaces */
+  --panel: rgba(255, 255, 255, 0.045);
+  --panel-hi: rgba(255, 255, 255, 0.085);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-hi: rgba(255, 255, 255, 0.18);
+
+  /* Text */
+  --ink: #f3f3f5;
+  --muted: rgba(243, 243, 245, 0.58);
+  --faint: rgba(243, 243, 245, 0.34);
+
+  /* Accents */
+  --teal: #6db5c4;
+  --teal-dk: #2c5c6c;
+  --gold: #c9a565;
+  --gold-dk: #705028;
+  --crimson: #b85060;
+  --green: #7fb893;
+
+  /* Major mode */
+  --major: #a83b50;
+  --major-dk: #5c1828;
+  --major-glow: rgba(168, 59, 80, 0.28);
+
+  /* Typography */
+  --font-body: "Manrope", -apple-system, system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+}
+
+html {
+  height: 100%;
+  background: #0a0a0d;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+}
+
+body {
+  width: 100%;
+  max-width: 430px;
+  height: 100%;
+  overflow: hidden;
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+main {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Filter dropdown — cap height via class (inline maxHeight unreliable in this Turbopack setup) */
+.filter-dd {
+  max-height: 220px !important;
+  overflow-y: auto !important;
+}

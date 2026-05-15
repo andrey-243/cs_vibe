@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CS Vibe — Card Viewer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0f0f14; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; min-height: 100vh; }
+
+  /* ---- HEADER ---- */
+  .header { background: #1a1a24; border-bottom: 1px solid #2a2a3a; padding: 16px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .header h1 { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+  .header .count { font-size: 13px; color: #666; }
+
+  /* ---- FILTERS ---- */
+  .filters { background: #141420; border-bottom: 1px solid #2a2a3a; padding: 12px 24px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  input[type="text"], select {
+    background: #1e1e2e; border: 1px solid #333; color: #e0e0e0;
+    padding: 7px 12px; border-radius: 6px; font-size: 13px; outline: none;
+  }
+  input[type="text"] { width: 200px; }
+  input[type="text"]:focus, select:focus { border-color: #5555ff; }
+  select option { background: #1e1e2e; }
+  .filter-label { font-size: 12px; color: #666; }
+  .reset-btn {
+    background: #2a2a3a; border: 1px solid #444; color: #aaa;
+    padding: 7px 14px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  }
+  .reset-btn:hover { background: #333; color: #fff; }
+
+  /* ---- GRID ---- */
+  .grid { display: flex; flex-wrap: wrap; gap: 16px; padding: 24px; justify-content: flex-start; }
+
+  /* ---- CARD ---- */
+  .card {
+    width: 160px; border-radius: 10px; overflow: hidden; cursor: pointer;
+    transition: transform .15s, box-shadow .15s; position: relative;
+    box-shadow: 0 4px 12px rgba(0,0,0,.5);
+  }
+  .card:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 8px 24px rgba(0,0,0,.7); }
+
+  /* Rarity backgrounds */
+  .card.bronze  { background: linear-gradient(160deg, #3d2010 0%, #6b3a1f 40%, #3d2010 100%); border: 1px solid #8b5e3c; }
+  .card.silver  { background: linear-gradient(160deg, #1e1e2a 0%, #3a3a4e 40%, #1e1e2a 100%); border: 1px solid #7a7a9a; }
+  .card.gold    { background: linear-gradient(160deg, #2a1e00 0%, #5a4000 40%, #2a1e00 100%); border: 1px solid #c8a000; }
+  .card.diamond { background: linear-gradient(160deg, #001830 0%, #002a50 40%, #001830 100%); border: 1px solid #00aaff; }
+  .card.icon    { background: linear-gradient(160deg, #1a0030 0%, #35006a 40%, #1a0030 100%); border: 1px solid #cc44ff; box-shadow: 0 0 20px rgba(170,0,255,.3); }
+
+  /* Overall badge */
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 8px 0; }
+  .overall {
+    font-size: 28px; font-weight: 900; line-height: 1;
+  }
+  .card.bronze  .overall { color: #e08050; }
+  .card.silver  .overall { color: #c0c0d8; }
+  .card.gold    .overall { color: #ffd700; }
+  .card.diamond .overall { color: #44ccff; }
+  .card.icon    .overall { color: #dd88ff; }
+
+  .rarity-badge {
+    font-size: 9px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+    padding: 2px 6px; border-radius: 4px; align-self: flex-start;
+  }
+  .card.bronze  .rarity-badge { background: #6b3a1f; color: #e08050; }
+  .card.silver  .rarity-badge { background: #3a3a4e; color: #b0b0cc; }
+  .card.gold    .rarity-badge { background: #5a4000; color: #ffd700; }
+  .card.diamond .rarity-badge { background: #002a50; color: #44ccff; }
+  .card.icon    .rarity-badge { background: #35006a; color: #dd88ff; }
+
+  /* Photo */
+  .card-photo { width: 100%; height: 110px; object-fit: cover; object-position: top; display: block; }
+  .card-photo-placeholder {
+    width: 100%; height: 110px; display: flex; align-items: center; justify-content: center;
+    font-size: 40px; opacity: .3;
+  }
+
+  /* Name + meta */
+  .card-info { padding: 6px 8px 4px; }
+  .card-name { font-size: 13px; font-weight: 700; color: #fff; text-align: center; letter-spacing: .5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-meta { display: flex; justify-content: center; align-items: center; gap: 6px; margin-top: 3px; font-size: 11px; color: #999; }
+  .card-flag { font-size: 14px; }
+  .card-role { font-size: 10px; background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 3px; }
+
+  /* Team */
+  .card-team { display: flex; align-items: center; justify-content: center; gap: 5px; padding: 2px 8px 6px; }
+  .team-logo { width: 16px; height: 16px; object-fit: contain; }
+  .team-name { font-size: 10px; color: #aaa; font-weight: 600; }
+
+  /* Stats */
+  .card-stats { padding: 0 8px 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 3px; }
+  .stat { text-align: center; }
+  .stat-val { font-size: 13px; font-weight: 700; color: #fff; }
+  .stat-lbl { font-size: 8px; color: #666; text-transform: uppercase; letter-spacing: .3px; }
+
+  /* ---- MODAL ---- */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.8);
+    z-index: 100; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #1a1a26; border: 1px solid #333; border-radius: 14px;
+    padding: 24px; max-width: 480px; width: 90%; max-height: 90vh; overflow-y: auto;
+    position: relative;
+  }
+  .modal-close { position: absolute; top: 12px; right: 16px; background: none; border: none; color: #666; font-size: 20px; cursor: pointer; }
+  .modal-close:hover { color: #fff; }
+  .modal-header { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; }
+  .modal-photo { width: 80px; height: 80px; object-fit: cover; object-position: top; border-radius: 8px; }
+  .modal-photo-ph { width: 80px; height: 80px; background: #222; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 36px; color: #444; }
+  .modal-identity h2 { font-size: 20px; font-weight: 800; color: #fff; }
+  .modal-identity .real-name { font-size: 13px; color: #888; margin-top: 2px; }
+  .modal-identity .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; background: rgba(255,255,255,.1); color: #ccc; }
+  .tag.rarity-tag.bronze  { background: #6b3a1f; color: #e08050; }
+  .tag.rarity-tag.silver  { background: #3a3a4e; color: #b0b0cc; }
+  .tag.rarity-tag.gold    { background: #5a4000; color: #ffd700; }
+  .tag.rarity-tag.diamond { background: #002a50; color: #44ccff; }
+  .tag.rarity-tag.icon    { background: #35006a; color: #dd88ff; }
+
+  .modal-section { margin-bottom: 16px; }
+  .modal-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #555; margin-bottom: 8px; }
+
+  /* Score bars */
+  .scores-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .score-row { display: flex; flex-direction: column; gap: 3px; }
+  .score-header { display: flex; justify-content: space-between; font-size: 12px; }
+  .score-label { color: #888; text-transform: capitalize; }
+  .score-val { color: #fff; font-weight: 700; }
+  .score-bar { height: 4px; background: #2a2a3a; border-radius: 2px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 2px; transition: width .3s; }
+
+  /* Raw stats table */
+  .raw-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+  .raw-table td { padding: 4px 8px; border-bottom: 1px solid #222; }
+  .raw-table td:first-child { color: #888; }
+  .raw-table td:last-child { color: #fff; font-weight: 600; text-align: right; }
+
+  /* Achievements */
+  .achievements { display: flex; flex-wrap: wrap; gap: 8px; }
+  .ach { background: #252535; border: 1px solid #333; border-radius: 6px; padding: 6px 10px; text-align: center; }
+  .ach-val { font-size: 18px; font-weight: 800; color: #fff; }
+  .ach-lbl { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: .3px; margin-top: 1px; }
+  .top20-list { font-size: 11px; color: #888; }
+  .top20-list span { display: inline-block; background: #252535; border-radius: 4px; padding: 2px 6px; margin: 2px; }
+  .top20-list span.top1 { background: #5a4000; color: #ffd700; }
+
+  /* No results */
+  .no-results { padding: 60px; text-align: center; color: #444; font-size: 16px; width: 100%; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>CS VIBE — CARD VIEWER</h1>
+  <span class="count" id="count">Loading…</span>
+</div>
+
+<div class="filters">
+  <span class="filter-label">Search</span>
+  <input type="text" id="search" placeholder="Name, team…">
+
+  <span class="filter-label">Rarity</span>
+  <select id="filter-rarity">
+    <option value="">All</option>
+    <option value="icon">Icon</option>
+    <option value="diamond">Diamond</option>
+    <option value="gold">Gold</option>
+    <option value="silver">Silver</option>
+    <option value="bronze">Bronze</option>
+  </select>
+
+  <span class="filter-label">Team</span>
+  <select id="filter-team"><option value="">All Teams</option></select>
+
+  <span class="filter-label">Nation</span>
+  <select id="filter-nation"><option value="">All Nations</option></select>
+
+  <span class="filter-label">Role</span>
+  <select id="filter-role"><option value="">All Roles</option></select>
+
+  <span class="filter-label">Sort</span>
+  <select id="sort">
+    <option value="overall-desc">Overall ↓</option>
+    <option value="overall-asc">Overall ↑</option>
+    <option value="name-asc">Name A→Z</option>
+    <option value="team-rank">Team Rank</option>
+    <option value="rating-desc">Rating ↓</option>
+  </select>
+
+  <button class="reset-btn" onclick="resetFilters()">Reset</button>
+</div>
+
+<div class="grid" id="grid"></div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<script>
+let allCards = [];
+let filtered = [];
+
+const SCORE_COLORS = {
+  firepower: '#ff6b35', opening: '#ffcc00', clutching: '#00ccff',
+  entrying: '#ff3377', trading: '#44ff88', impact: '#aa66ff'
+};
+
+function isoToFlag(iso) {
+  if (!iso || iso.length !== 2) return '🏳️';
+  return String.fromCodePoint(...[...iso.toUpperCase()].map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+}
+
+function rarityOrder(r) {
+  return { icon: 5, diamond: 4, gold: 3, silver: 2, bronze: 1 }[r] || 0;
+}
+
+function renderCard(p) {
+  const flag = isoToFlag(p.nationality);
+  const role = p.roles?.[0] || '';
+  const teamLogo = p.team_logo ? `<img class="team-logo" src="${p.team_logo}" onerror="this.style.display='none'">` : '';
+  const photoSrc = p.no_photo ? null : `./images/${p.player_id}.png`;
+  const photo = photoSrc
+    ? `<img class="card-photo" src="${photoSrc}" onerror="this.outerHTML='<div class=\'card-photo-placeholder\'>👤</div>'">`
+    : `<div class="card-photo-placeholder">👤</div>`;
+
+  const scores = p.category_scores || {};
+  const statsHtml = ['firepower','opening','clutching','entrying','trading','impact'].map(k =>
+    `<div class="stat"><div class="stat-val">${scores[k] ?? '—'}</div><div class="stat-lbl">${k.slice(0,3)}</div></div>`
+  ).join('');
+
+  return `
+    <div class="card ${p.rarity}" onclick="openModal(${p.player_id})">
+      <div class="card-top">
+        <div class="overall">${p.overall}</div>
+        <div class="rarity-badge">${p.rarity}</div>
+      </div>
+      ${photo}
+      <div class="card-info">
+        <div class="card-name">${p.name}</div>
+        <div class="card-meta">
+          <span class="card-flag">${flag}</span>
+          ${role ? `<span class="card-role">${role}</span>` : ''}
+        </div>
+      </div>
+      <div class="card-team">
+        ${teamLogo}
+        <span class="team-name">${p.team_acronym || p.team || ''}</span>
+      </div>
+      <div class="card-stats">${statsHtml}</div>
+    </div>`;
+}
+
+function renderModal(p) {
+  const flag = isoToFlag(p.nationality);
+  const scores = p.category_scores || {};
+  const raw = p.raw_stats || {};
+  const ach = p.achievements || {};
+
+  const photoSrc = p.no_photo ? null : `./images/${p.player_id}.png`;
+  const photo = photoSrc
+    ? `<img class="modal-photo" src="${photoSrc}" onerror="this.outerHTML='<div class=\'modal-photo-ph\'>👤</div>'">`
+    : `<div class="modal-photo-ph">👤</div>`;
+
+  const realName = [p.first_name, p.last_name].filter(Boolean).join(' ');
+  const roles = (p.roles || []).map(r => `<span class="tag">${r}</span>`).join('');
+
+  const scoresHtml = Object.entries(scores).map(([k, v]) => `
+    <div class="score-row">
+      <div class="score-header"><span class="score-label">${k}</span><span class="score-val">${v}</span></div>
+      <div class="score-bar"><div class="score-fill" style="width:${v}%;background:${SCORE_COLORS[k]||'#888'}"></div></div>
+    </div>`).join('');
+
+  const rawRows = [
+    ['Rating', raw.rating?.toFixed(3)],
+    ['ADR', raw.adr?.toFixed(1)],
+    ['KAST', raw.kast ? raw.kast.toFixed(1)+'%' : null],
+    ['K/map', raw.k?.toFixed(1)],
+    ['D/map', raw.d?.toFixed(1)],
+    ['Swing', raw.swing?.toFixed(2)],
+  ].filter(r => r[1] != null).map(([l,v]) => `<tr><td>${l}</td><td>${v}</td></tr>`).join('');
+
+  const achItems = [
+    ['MVP', ach.mvp_count, '🏆'],
+    ['Major wins', ach.major_count, '🎖️'],
+    ['Major MVP', ach.major_mvp_count, '⭐'],
+    ['Top20 HLTV', ach.top20_count, '📊'],
+    ['Best rank', ach.best_rank ? '#'+ach.best_rank : null, '🥇'],
+  ].filter(a => a[1]).map(([l,v,e]) => `
+    <div class="ach"><div class="ach-val">${e} ${v}</div><div class="ach-lbl">${l}</div></div>`).join('');
+
+  const top20Html = ach.top20 ? Object.entries(ach.top20).sort((a,b)=>b[0]-a[0]).map(([y,r]) =>
+    `<span class="${r===1?'top1':''}">${y} #${r}</span>`).join('') : '';
+
+  return `
+    <button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">✕</button>
+    <div class="modal-header">
+      ${photo}
+      <div class="modal-identity">
+        <h2>${p.name.toUpperCase()}</h2>
+        ${realName ? `<div class="real-name">${realName}</div>` : ''}
+        <div class="tags">
+          <span class="tag rarity-tag ${p.rarity}">${p.rarity.toUpperCase()} · ${p.overall}</span>
+          <span class="tag">${flag} ${p.nationality}</span>
+          ${roles}
+        </div>
+        <div class="tags" style="margin-top:4px">
+          <span class="tag">${p.team || ''} ${p.team_rank ? '(#'+p.team_rank+')' : ''}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h3>Category Scores</h3>
+      <div class="scores-grid">${scoresHtml}</div>
+    </div>
+
+    ${rawRows ? `<div class="modal-section"><h3>Raw Stats (last ~30 maps)</h3><table class="raw-table">${rawRows}</table></div>` : ''}
+
+    ${achItems ? `<div class="modal-section"><h3>Achievements</h3><div class="achievements">${achItems}</div></div>` : ''}
+
+    ${top20Html ? `<div class="modal-section"><h3>Top20 HLTV History</h3><div class="top20-list">${top20Html}</div></div>` : ''}
+  `;
+}
+
+function applyFilters() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const rarity = document.getElementById('filter-rarity').value;
+  const team = document.getElementById('filter-team').value;
+  const nation = document.getElementById('filter-nation').value;
+  const role = document.getElementById('filter-role').value;
+  const sort = document.getElementById('sort').value;
+
+  filtered = allCards.filter(p => {
+    if (rarity && p.rarity !== rarity) return false;
+    if (team && p.team !== team) return false;
+    if (nation && p.nationality !== nation) return false;
+    if (role && !(p.roles||[]).includes(role)) return false;
+    if (search && !p.name.includes(search) && !(p.team||'').toLowerCase().includes(search)
+        && !(p.first_name||'').toLowerCase().includes(search)
+        && !(p.last_name||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const [sortKey, sortDir] = sort.split('-');
+  filtered.sort((a, b) => {
+    if (sortKey === 'overall') return sortDir === 'desc' ? b.overall - a.overall : a.overall - b.overall;
+    if (sortKey === 'name') return a.name.localeCompare(b.name);
+    if (sortKey === 'team') return (a.team_rank||999) - (b.team_rank||999);
+    if (sortKey === 'rating') return (b.raw_stats?.rating||0) - (a.raw_stats?.rating||0);
+    return 0;
+  });
+
+  const grid = document.getElementById('grid');
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="no-results">No cards match your filters.</div>';
+  } else {
+    grid.innerHTML = filtered.map(renderCard).join('');
+  }
+  document.getElementById('count').textContent = `${filtered.length} / ${allCards.length} cards`;
+}
+
+function openModal(id) {
+  const p = allCards.find(c => c.player_id == id);
+  if (!p) return;
+  document.getElementById('modal-content').innerHTML = renderModal(p);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (e.target.id === 'modal-overlay') document.getElementById('modal-overlay').classList.remove('open');
+}
+
+function resetFilters() {
+  document.getElementById('search').value = '';
+  document.getElementById('filter-rarity').value = '';
+  document.getElementById('filter-team').value = '';
+  document.getElementById('filter-nation').value = '';
+  document.getElementById('filter-role').value = '';
+  document.getElementById('sort').value = 'overall-desc';
+  applyFilters();
+}
+
+function populateFilters() {
+  const teams = [...new Set(allCards.map(p => p.team).filter(Boolean))].sort();
+  const nations = [...new Set(allCards.map(p => p.nationality).filter(Boolean))].sort();
+  const roles = [...new Set(allCards.flatMap(p => p.roles||[]))].sort();
+
+  const teamSel = document.getElementById('filter-team');
+  teams.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = t; teamSel.appendChild(o); });
+
+  const natSel = document.getElementById('filter-nation');
+  nations.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = `${isoToFlag(n)} ${n}`; natSel.appendChild(o); });
+
+  const roleSel = document.getElementById('filter-role');
+  roles.forEach(r => { const o = document.createElement('option'); o.value = r; o.textContent = r; roleSel.appendChild(o); });
+}
+
+// Event listeners
+['search','filter-rarity','filter-team','filter-nation','filter-role','sort'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyFilters);
+  document.getElementById(id).addEventListener('change', applyFilters);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('open');
+});
+
+// Load data
+fetch('./players_cards.json')
+  .then(r => r.json())
+  .then(data => {
+    allCards = data;
+    populateFilters();
+    applyFilters();
+  })
+  .catch(() => {
+    document.getElementById('grid').innerHTML = '<div class="no-results">⚠️ Run: <code>python3 -m http.server 8080</code> in the <code>output/</code> folder, then open <a href="http://localhost:8080/viewer.html" style="color:#5af">localhost:8080/viewer.html</a></div>';
+    document.getElementById('count').textContent = 'Not loaded';
+  });
+</script>
+</body>
+</html>

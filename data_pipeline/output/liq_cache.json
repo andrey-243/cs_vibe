@@ -1,0 +1,2552 @@
+{
+  "apex": {
+    "roles": [
+      "IGL"
+    ],
+    "top20": {
+      "2014": 15,
+      "2015": 18
+    },
+    "top20_count": 2,
+    "best_rank": 15,
+    "top1_count": 0
+  },
+  "flamez": {
+    "roles": [
+      "Entry"
+    ],
+    "top20": {
+      "2024": 7,
+      "2025": 7
+    },
+    "top20_count": 2,
+    "best_rank": 7,
+    "top1_count": 0
+  },
+  "mezii": {
+    "roles": [
+      "Rifler"
+    ],
+    "top20": {
+      "2025": 12
+    },
+    "top20_count": 1,
+    "best_rank": 12,
+    "top1_count": 0
+  },
+  "magixx": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "tn1r": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "zont1x": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "im": {
+    "roles": [
+      "Entry"
+    ],
+    "top20": {
+      "2024": 16,
+      "2025": 19
+    },
+    "top20_count": 2,
+    "best_rank": 16,
+    "top1_count": 0
+  },
+  "aleksib": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "b1t": {
+    "roles": [
+      "Support"
+    ],
+    "top20": {
+      "2021": 9,
+      "2022": 16,
+      "2024": 9,
+      "2025": 20
+    },
+    "top20_count": 4,
+    "best_rank": 9,
+    "top1_count": 0
+  },
+  "w0nderful": {
+    "roles": [
+      "AWPer"
+    ],
+    "top20": {
+      "2024": 11
+    },
+    "top20_count": 1,
+    "best_rank": 11,
+    "top1_count": 0
+  },
+  "makazze": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "karrigan": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ],
+    "mvp_count": 2,
+    "major_count": 1,
+    "top20": {
+      "2011": 8
+    },
+    "top20_count": 1,
+    "best_rank": 8,
+    "top1_count": 0
+  },
+  "teses": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "kyousuke": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "torzsi": {
+    "roles": [
+      "AWPer"
+    ],
+    "top20": {
+      "2024": 20,
+      "2025": 17
+    },
+    "top20_count": 2,
+    "best_rank": 17,
+    "top1_count": 0
+  },
+  "spinx": {
+    "roles": [
+      "Lurker"
+    ],
+    "top20": {
+      "2022": 18,
+      "2023": 5,
+      "2024": 13,
+      "2025": 10
+    },
+    "top20_count": 4,
+    "best_rank": 5,
+    "top1_count": 0
+  },
+  "xertion": {},
+  "xelex": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "techno": {
+    "roles": [
+      "Rifler"
+    ],
+    "mvp_count": 1
+  },
+  "cobrazera": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "maj3r": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "woxic": {
+    "roles": [
+      "AWPer"
+    ],
+    "mvp_count": 1,
+    "top20": {
+      "2019": 12
+    },
+    "top20_count": 1,
+    "best_rank": 12,
+    "top1_count": 0
+  },
+  "soulfly": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "wicadia": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "hooxi": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "phzy": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "staehr": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "ryu": {
+    "roles": [
+      "Coach"
+    ]
+  },
+  "yekindar": {
+    "roles": [
+      "Entry"
+    ],
+    "top20": {
+      "2021": 8,
+      "2022": 15,
+      "2025": 15
+    },
+    "top20_count": 3,
+    "best_rank": 8,
+    "top1_count": 0
+  },
+  "mzinho": {
+    "roles": [
+      "Rifle"
+    ]
+  },
+  "blitz": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "910": {
+    "roles": [
+      "Awp"
+    ],
+    "mvp_count": 1
+  },
+  "kscerato": {
+    "roles": [
+      "Lurker"
+    ],
+    "top20": {
+      "2020": 18,
+      "2021": 15,
+      "2022": 9,
+      "2023": 19,
+      "2025": 9
+    },
+    "top20_count": 5,
+    "best_rank": 9,
+    "top1_count": 0
+  },
+  "dziugss": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "hunter": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "nertz": {
+    "roles": [
+      "Rifler"
+    ],
+    "top20": {
+      "2023": 14
+    },
+    "top20_count": 1,
+    "best_rank": 14,
+    "top1_count": 0
+  },
+  "sunpayus": {
+    "roles": [
+      "AWPer"
+    ],
+    "top20": {
+      "2023": 6
+    },
+    "top20_count": 1,
+    "best_rank": 6,
+    "top1_count": 0
+  },
+  "heavygod": {
+    "roles": [
+      "Rifler"
+    ],
+    "mvp_count": 1
+  },
+  "matys": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "belchonokk": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "xielo": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "nota": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "zweih": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "rez": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ],
+    "mvp_count": 1
+  },
+  "tauson": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "pr": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "dem0n": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "krabeni": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "launx": {
+    "roles": [
+      "Rifle"
+    ]
+  },
+  "cmtry": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "hypex": {
+    "roles": [
+      "Awp"
+    ]
+  },
+  "max": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "luchov": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "huasopeek": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "art": {},
+  "latto": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ]
+  },
+  "n1ssim": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "dgt": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "saadzin": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "biguzera": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "piriajr": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "snow": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "boombl4": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "zorte": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "vsm": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "s1ren": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "magnojez": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "meyern": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "alex666": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "npl": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "dumau": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ]
+  },
+  "kensizor": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "fl4mus": {
+    "roles": [
+      "Entryfragger"
+    ]
+  },
+  "rainwaker": {
+    "roles": [
+      "Lurker",
+      "Support"
+    ]
+  },
+  "afro": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "gizmy": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "azuwu": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "esenthial": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "saffee": {
+    "roles": [
+      "AWPer"
+    ],
+    "mvp_count": 1
+  },
+  "lucky": {},
+  "bymas": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "graviti": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "xfl0ud": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "nilo": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "maka": {
+    "roles": [
+      "IGL",
+      "AWPer"
+    ]
+  },
+  "chr1zn": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "misutaaa": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "yxngstxr": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "frozen": {
+    "roles": [
+      "Rifler"
+    ],
+    "mvp_count": 1,
+    "top20": {
+      "2022": 17,
+      "2023": 12,
+      "2024": 10,
+      "2025": 8
+    },
+    "top20_count": 4,
+    "best_rank": 8,
+    "top1_count": 0
+  },
+  "s1zzi": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "neityu": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "jcobbb": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "tabsen": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "blamef": {
+    "roles": [
+      "Lurker",
+      "IGL"
+    ],
+    "mvp_count": 1,
+    "top20": {
+      "2020": 6,
+      "2021": 13,
+      "2022": 12,
+      "2023": 16
+    },
+    "top20_count": 4,
+    "best_rank": 6,
+    "top1_count": 0
+  },
+  "gr1ks": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "ex3rcice": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "masval": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sfade8": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "faven": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "susp": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "mo0n": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "prosus": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "snappi": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "xkacpersky": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "aw": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "beastik": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "tenzy": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "shock": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "stavn": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ],
+    "top20": {
+      "2020": 12,
+      "2021": 16,
+      "2022": 10,
+      "2023": 9
+    },
+    "top20_count": 4,
+    "best_rank": 9,
+    "top1_count": 0
+  },
+  "kisserek": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "alex": {
+    "roles": [
+      "Caster"
+    ]
+  },
+  "mopoz": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "sausol": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "modo": {
+    "roles": [
+      "Awp"
+    ]
+  },
+  "martinezsa": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "stressarn": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "brnz4n": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "insani": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "venomzera": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sjuush": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "twist": {
+    "roles": [
+      "IGL",
+      "Support"
+    ]
+  },
+  "cairne": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "eraa": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "upe": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "mail09": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "dav1g": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "kl1m": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "lnz": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "avid": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "slaxz": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "swisher": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "s1n": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "jba": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "lake": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "nemanha": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "mhl": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "cxzi": {
+    "roles": [
+      "Rifler",
+      "AWPer",
+      "Igl"
+    ]
+  },
+  "reck": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "hext": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "maxster": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "ro1f": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "bobeksde": {
+    "roles": [
+      "Rifle"
+    ]
+  },
+  "dex": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sellter": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "r3salt": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "mag1k3y": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "tex1y": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sdaim": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "jamyoung": {
+    "roles": [
+      "Rifler"
+    ],
+    "mvp_count": 1
+  },
+  "jee": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "mercury": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "volt": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "moseyuh": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "ztr": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "matheos": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "1eer": {
+    "roles": [
+      "Support",
+      "IGL"
+    ]
+  },
+  "sowalio": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "khan": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "zero": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "syph0": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sonic": {},
+  "osee": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "grim": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "br0": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "westmelon": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "nitr0": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "starry": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "z4kr": {
+    "roles": [
+      "Entry",
+      "AWPer"
+    ]
+  },
+  "emiliaqaq": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "banjo": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "jorko": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "kade0": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "kair0n": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "mizu": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "frontales": {
+    "roles": [
+      "Awper"
+    ]
+  },
+  "gafolo": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "maxxkor": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "koala": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "n0rb3r7": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "doc": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "c4llm3su3": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "gokushima": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "rdnzao": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "nacho": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "cass1n": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "buda": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "tomaszin": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "timo": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "hen1": {
+    "roles": [
+      "AWPer"
+    ],
+    "mvp_count": 1,
+    "top20": {
+      "2020": 16
+    },
+    "top20_count": 1,
+    "best_rank": 16,
+    "top1_count": 0
+  },
+  "felps": {
+    "roles": [
+      "Entry"
+    ],
+    "mvp_count": 1
+  },
+  "nekiz": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "luken": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ]
+  },
+  "jota": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "x5g7v": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "xeedo": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "kashl1d": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "qw1nk1": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "malbsmd": {
+    "roles": [
+      "Entry"
+    ],
+    "top20": {
+      "2024": 12
+    },
+    "top20_count": 1,
+    "best_rank": 12,
+    "top1_count": 0
+  },
+  "siuhy": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "ultimate": {
+    "roles": [
+      "Awper"
+    ]
+  },
+  "ag1l": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sirah": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "poiii": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "reiko": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "samey": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "bajmi": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "olimp": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "moonwalk": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "m1n1": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sinnopsyy": {
+    "roles": [
+      "IGL",
+      "Lurker"
+    ]
+  },
+  "bibu": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "cacanito": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "0samas": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "jt": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "try": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "kvem": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "nicx": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "maden": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "hadji": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "woro2k": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "juanflatroo": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "7kick": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ]
+  },
+  "junior": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "nosrac": {
+    "roles": [
+      "Rifle"
+    ]
+  },
+  "snav": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "kreaz": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "blytz": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "jeorge": {
+    "roles": [
+      "Rifle"
+    ]
+  },
+  "senka": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "m1quse": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sl3nd": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "z1k4": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "ayuki": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "mhn1": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "salazar": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "iceberg": {
+    "roles": [
+      "IGL",
+      "Rifle"
+    ]
+  },
+  "leakz": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "nickyb": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "boye": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "dexter": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "shane": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "liazz": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "tjp": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "asap": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "reyoz": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "dytor": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "lattykk": {
+    "roles": [
+      "Awp"
+    ]
+  },
+  "cronuss": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "nbl": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "oz1k": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "flouzer": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "mistr": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "zyphon": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "beccie": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "tom1jed": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "acor": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "ivz": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "abizz": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "naz": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "fraguty": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "alistair": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "xant3r": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "nafany": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "artfr0st": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "mistem": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "demqq": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "regali": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "cabbi": {},
+  "cptkurtka023": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "headtr1ck": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ]
+  },
+  "peqexino": {
+    "roles": [
+      "Assistant coach"
+    ]
+  },
+  "onic": {
+    "roles": [
+      "Rifler",
+      "IGL"
+    ]
+  },
+  "sugar": {},
+  "rigon": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "jottaaa": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "zerrofix": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "dawy": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "neuz": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "rate": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "clouden": {
+    "roles": [
+      "Rifle"
+    ]
+  },
+  "ariucle": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "hoolig4n": {
+    "roles": [
+      "AWPer",
+      "IGL"
+    ]
+  },
+  "kinqie": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "kiro": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "z1nny": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "executor": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "kauez": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "dav1deus": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "drop": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "chayjesus": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "bluewh1te": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "rentu": {},
+  "dssj": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "get-jeka": {
+    "roles": [
+      "Rifle"
+    ]
+  },
+  "ryujin": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "raijin": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ]
+  },
+  "synyx": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "glowiing": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "chelo": {
+    "roles": [
+      "Entry"
+    ],
+    "mvp_count": 1
+  },
+  "bl1x1": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "mokuj1n": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "fluffy": {},
+  "alpha": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "nin9": {
+    "roles": [
+      "IGL",
+      "AWPer"
+    ]
+  },
+  "decenty": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "levi": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "noway": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "vini": {
+    "roles": [
+      "IGL",
+      "Support"
+    ]
+  },
+  "sk0r": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "bart4k": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "xerolte": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "controlez": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "lekr0": {
+    "roles": [
+      "IGL",
+      "Lurker"
+    ]
+  },
+  "sapec": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "heap": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "jocab": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "naitte": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "wood7": {
+    "roles": [
+      "IGL",
+      "AWPer"
+    ]
+  },
+  "pesadelo": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "ksloks": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "jks": {
+    "roles": [
+      "Rifler"
+    ],
+    "top20": {
+      "2019": 15,
+      "2020": 19
+    },
+    "top20_count": 2,
+    "best_rank": 15,
+    "top1_count": 0
+  },
+  "ins": {},
+  "vexite": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "nettik": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "story": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "k1to": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "altekz": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "kyuubii": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "l00m1": {
+    "roles": [
+      "Awper"
+    ]
+  },
+  "myltsi": {
+    "roles": [
+      "Rifler",
+      "Awp"
+    ]
+  },
+  "n1xen": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ]
+  },
+  "maze": {
+    "roles": [
+      "Rifler",
+      "IGL"
+    ]
+  },
+  "anber": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "ssen": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "bekker": {
+    "roles": [
+      "Awp"
+    ]
+  },
+  "kelien": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "d1ledez": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "strogo": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "ct0m": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "deko": {
+    "roles": [
+      "AWPer",
+      "Rifler"
+    ]
+  },
+  "erkast": {
+    "roles": [
+      "Coach"
+    ]
+  },
+  "sergelen19k": {},
+  "miq": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "accuracytg": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "zesta": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "spellan": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "redstar": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ]
+  },
+  "kaluber": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "h4rn": {
+    "roles": [
+      "AWPer",
+      "IGL"
+    ]
+  },
+  "skrimo": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "nickelback": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "lack1": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "el1an": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "forester": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "travis": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "k0s": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "fenomen": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "k1slll": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "finw": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "gooddeph": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "cadian": {
+    "roles": [
+      "IGL",
+      "Awper",
+      "Rifler"
+    ],
+    "top20": {
+      "2023": 18
+    },
+    "top20_count": 1,
+    "best_rank": 18,
+    "top1_count": 0
+  },
+  "bodyy": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "spooke": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "arrozdoce": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "adamb": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sol": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "1nvisiblee": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "xm1nd": {
+    "roles": [
+      "Awp"
+    ]
+  },
+  "djon8": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "k4nfuz": {},
+  "hasteka": {
+    "roles": [
+      "Rifle"
+    ]
+  },
+  "roux": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "yami": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "efire": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "tikuak": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "fear": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "jambo": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "zevy": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "br4tko": {},
+  "exit": {
+    "roles": [
+      "IGL",
+      "Lurker"
+    ]
+  },
+  "lucaozy": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "jackasmo": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "kye": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "mlhzin": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "freshie": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "grizz": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "ogwizard": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "marekiew": {},
+  "wumbo": {},
+  "tmb": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "nicoodoz": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "anlelele": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "buzz": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "nut-nut": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "yumsan": {
+    "roles": [
+      "AWPer",
+      "IGL"
+    ]
+  },
+  "h4san4tor": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sh1nejezzz": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "robo": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "relaxxie": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "raalz": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "adams": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "kraghen": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "notineki": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "flayy": {
+    "roles": [
+      "Awper"
+    ]
+  },
+  "hazr": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "keen": {
+    "roles": [
+      "IGL",
+      "AWPer"
+    ]
+  },
+  "shadiy": {
+    "roles": [
+      "Rifle"
+    ]
+  },
+  "savage": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "sliimey": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "hades": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "demho": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "prism": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "bogdan": {
+    "roles": [
+      "Coach"
+    ]
+  },
+  "dr3nquu": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "ponter": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "kaiser": {
+    "roles": [
+      "IGL",
+      "AWPer"
+    ]
+  },
+  "zock": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "freq": {
+    "roles": [
+      "Lurker"
+    ]
+  },
+  "pepe": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "smooya": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "clax": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "cypher": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "patsi": {
+    "roles": [
+      "Rifler",
+      "IGL"
+    ]
+  },
+  "pr1metapz": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "stanislaw": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "plopski": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "isak": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "f1ku": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "forsyy": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "innocent": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "fr3nd": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "b1elany": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "ex1st": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "qlocuu": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "krazy": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "electronic": {
+    "roles": [
+      "Entry"
+    ],
+    "mvp_count": 1,
+    "top20": {
+      "2018": 4,
+      "2019": 6,
+      "2020": 5,
+      "2021": 7
+    },
+    "top20_count": 4,
+    "best_rank": 4,
+    "top1_count": 0
+  },
+  "scrunk": {
+    "roles": [
+      "Analyst"
+    ]
+  },
+  "senzu": {
+    "roles": [
+      "Rifler",
+      "Awper"
+    ],
+    "top20": {
+      "2025": 13
+    },
+    "top20_count": 1,
+    "best_rank": 13,
+    "top1_count": 0
+  },
+  "nitzie": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "zealot": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "k1ssly": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "ayano": {},
+  "heckbnk": {},
+  "destiny": {
+    "roles": [
+      "Entry"
+    ]
+  },
+  "nython": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "gbb": {
+    "roles": [
+      "Support"
+    ]
+  },
+  "tomate": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "k1not1": {},
+  "nealan": {
+    "roles": [
+      "IGL",
+      "Support"
+    ]
+  },
+  "th0r": {
+    "roles": [
+      "IGL",
+      "AWPer"
+    ]
+  },
+  "aleks": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "crepow": {
+    "roles": [
+      "IGL"
+    ]
+  },
+  "corn": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "zmb": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "leomonster": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "alisson": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "happ": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "divine": {},
+  "facecrack": {
+    "roles": [
+      "IGL",
+      "Entry"
+    ]
+  },
+  "eightz999": {},
+  "abiraju": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "psychodoctor": {
+    "roles": [
+      "Rifler",
+      "AWPer"
+    ]
+  },
+  "slaxejezzz": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "4x1s": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "riskyb0b": {
+    "roles": [
+      "Rifler",
+      "IGL"
+    ]
+  },
+  "tiger": {},
+  "alv": {
+    "roles": [
+      "AWPer"
+    ]
+  },
+  "x9": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "summer": {
+    "roles": [
+      "IGL",
+      "Rifler"
+    ]
+  },
+  "karnez": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "l1hang": {
+    "roles": [
+      "Rifler"
+    ]
+  },
+  "chengking": {
+    "roles": [
+      "Rifler"
+    ]
+  }
+}
