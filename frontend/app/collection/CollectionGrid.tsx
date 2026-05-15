@@ -5,6 +5,7 @@ import { C, F, R, RarityTier } from "../lib/tokens";
 import { CardDisplay } from "../lib/cards";
 import MiniCard from "../components/MiniCard";
 import XPBar from "../components/XPBar";
+import CardDetailModal from "../components/CardDetailModal";
 
 const RARITY_ORDER: RarityTier[] = ["ICON", "DIAMOND", "GOLD", "SILVER", "BRONZE", "LEGACY"];
 
@@ -146,7 +147,7 @@ function FilterDropdown({
 
 const PAGE_SIZE = 9;
 
-const CARD_RATIO = 148 / 84; // height / width
+const CARD_RATIO = 124 / 84; // height / width — matches grid design spec
 
 export default function CollectionGrid({ cards }: { cards: CardDisplay[] }) {
   const [view, setView] = useState<"mine" | "all">("all");
@@ -155,6 +156,7 @@ export default function CollectionGrid({ cards }: { cards: CardDisplay[] }) {
   const [teamFilter, setTeamFilter] = useState("");
   const [page, setPage] = useState(0);
   const [cardSize, setCardSize] = useState({ w: 84, h: 148 });
+  const [selected, setSelected] = useState<CardDisplay | null>(null);
   const gridAreaRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
@@ -340,10 +342,11 @@ export default function CollectionGrid({ cards }: { cards: CardDisplay[] }) {
               return c ? (
                 <MiniCard
                   key={c.player_id}
-                  p={{ name: c.name, overall: c.overall, role: c.role, teamShort: c.teamShort, imageUrl: c.image_url, noPhoto: c.no_photo, categoryScores: c.category_scores }}
+                  p={{ name: c.name, overall: c.overall, role: c.role, teamShort: c.teamShort, imageUrl: c.image_url, noPhoto: c.no_photo, nationality: c.nationality }}
                   tier={c.tier}
                   w={cardSize.w}
                   h={cardSize.h}
+                  onClick={() => setSelected(c)}
                 />
               ) : (
                 <div key={i} style={{ width: cardSize.w, height: cardSize.h }} />
@@ -400,6 +403,28 @@ export default function CollectionGrid({ cards }: { cards: CardDisplay[] }) {
           )}
         </>
       )}
+
+      {/* Detail modal — tap a card to expand into D · Portrait */}
+      <CardDetailModal
+        card={
+          selected
+            ? {
+                name: selected.name,
+                overall: selected.overall,
+                role: selected.role,
+                team: selected.team,
+                teamShort: selected.teamShort,
+                teamRank: selected.teamRank,
+                imageUrl: selected.image_url,
+                noPhoto: selected.no_photo,
+                categoryScores: selected.category_scores,
+                nationality: selected.nationality,
+              }
+            : null
+        }
+        tier={selected?.tier ?? "GOLD"}
+        onClose={() => setSelected(null)}
+      />
     </div>
   );
 }

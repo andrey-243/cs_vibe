@@ -56,12 +56,12 @@ export default function BottomNav() {
       className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px]"
       style={{
         zIndex: 300,
-        padding: "8px 12px 14px",
+        padding: "8px 8px 14px",
         background: "linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.55) 100%)",
         borderTop: "1px solid rgba(255,255,255,0.06)",
       }}
     >
-      <div style={{ display: "flex", gap: 6 }}>
+      <div style={{ display: "flex", gap: 4 }}>
         {tabs.map(({ href, label, icon }) => {
           const active = pathname === href;
           return (
@@ -69,10 +69,11 @@ export default function BottomNav() {
               key={href}
               href={href}
               style={{
-                flex: 1,
+                flex: "1 1 0",
+                minWidth: 0,
                 position: "relative",
                 textAlign: "center",
-                padding: "6px 4px 4px",
+                padding: "6px 2px 4px",
                 borderRadius: 8,
                 background: active ? "rgba(255,255,255,0.06)" : "transparent",
                 border: active ? "1px solid rgba(255,255,255,0.1)" : "1px solid transparent",
@@ -101,8 +102,11 @@ export default function BottomNav() {
                   fontFamily: F.body,
                   fontSize: 9.5,
                   fontWeight: 700,
-                  letterSpacing: "0.06em",
+                  letterSpacing: "0.04em",
                   color: active ? C.ink : C.faint,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
                 {label}

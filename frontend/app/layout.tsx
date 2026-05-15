@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "flag-icons/css/flag-icons.min.css";
 import BottomNav from "./components/BottomNav";
 
 export const metadata: Metadata = {

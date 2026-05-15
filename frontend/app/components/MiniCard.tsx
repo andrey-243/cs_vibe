@@ -9,6 +9,7 @@ export interface CardData {
   imageUrl?: string | null;
   noPhoto?: boolean;
   categoryScores?: CategoryScores;
+  nationality?: string;
 }
 
 const STAT_LABELS: [keyof CategoryScores, string][] = [
@@ -27,6 +28,7 @@ export default function MiniCard({
   dim = false,
   w = 84 as number | string,
   h = 148 as number | string,
+  onClick,
 }: {
   p?: CardData;
   tier?: RarityTier;
@@ -34,13 +36,39 @@ export default function MiniCard({
   dim?: boolean;
   w?: number | string;
   h?: number | string;
+  onClick?: () => void;
 }) {
   const chrome = rarityChrome(tier);
   const showPhoto = p?.imageUrl && !p?.noPhoto;
   const hasStats = !!p?.categoryScores;
+  const interactive = !!onClick;
 
   return (
-    <div style={{ position: "relative", width: w, height: h, opacity: dim ? 0.4 : 1, flexShrink: 0 }}>
+    <div
+      onClick={onClick}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+      style={{
+        position: "relative",
+        width: w,
+        height: h,
+        opacity: dim ? 0.4 : 1,
+        flexShrink: 0,
+        cursor: interactive ? "pointer" : "default",
+        touchAction: interactive ? "manipulation" : undefined,
+        outline: "none",
+      }}
+    >
       {/* glow halo */}
       <div
         style={{
@@ -114,12 +142,12 @@ export default function MiniCard({
           }}
         />
 
-        {/* TL — overall + tier */}
+        {/* TL — overall + role */}
         <div style={{ position: "absolute", top: 7, left: 8 }}>
           <div
             style={{
               fontFamily: F.body,
-              fontSize: 22,
+              fontSize: 24,
               fontWeight: 800,
               lineHeight: 0.9,
               letterSpacing: "-0.03em",
@@ -131,32 +159,27 @@ export default function MiniCard({
           <div
             style={{
               fontFamily: F.body,
-              fontSize: 6,
+              fontSize: 6.5,
               fontWeight: 700,
-              letterSpacing: "0.16em",
+              letterSpacing: "0.14em",
               color: chrome.label,
               marginTop: 2,
               textShadow: "0 1px 2px rgba(0,0,0,0.6)",
             }}
           >
-            {tier}
-          </div>
-        </div>
-
-        {/* TR — role */}
-        <div style={{ position: "absolute", top: 9, right: 8, textAlign: "right" }}>
-          <div
-            style={{
-              fontFamily: F.body,
-              fontSize: 8,
-              fontWeight: 700,
-              letterSpacing: "0.12em",
-              textShadow: "0 1px 3px rgba(0,0,0,0.7)",
-            }}
-          >
             {(p?.role ?? "RIF").slice(0, 3).toUpperCase()}
           </div>
         </div>
+
+        {/* TR — flag */}
+        {p?.nationality && (
+          <div style={{ position: "absolute", top: 7, right: 7, zIndex: 2 }}>
+            <span
+              className={`fi fi-${p.nationality.toLowerCase()}`}
+              style={{ width: 12, height: 9, display: "block", borderRadius: 1, boxShadow: "0 1px 3px rgba(0,0,0,0.5)" }}
+            />
+          </div>
+        )}
 
         {/* Bottom zone — name + team + stats */}
         <div
@@ -185,7 +208,7 @@ export default function MiniCard({
           <div
             style={{
               fontFamily: F.mono,
-              fontSize: 5.5,
+              fontSize: 6.5,
               letterSpacing: "0.12em",
               opacity: 0.8,
               marginTop: 2,
