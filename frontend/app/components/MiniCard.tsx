@@ -29,6 +29,7 @@ export default function MiniCard({
   tier = "GOLD",
   isNew = false,
   dim = false,
+  locked = false,
   w = 84 as number | string,
   h = 148 as number | string,
   onClick,
@@ -37,6 +38,7 @@ export default function MiniCard({
   tier?: RarityTier;
   isNew?: boolean;
   dim?: boolean;
+  locked?: boolean;
   w?: number | string;
   h?: number | string;
   onClick?: () => void;
@@ -260,6 +262,21 @@ export default function MiniCard({
             </div>
           )}
         </div>
+
+        {/* Locked overlay — greyed card with diagonal stripes */}
+        {locked && (
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 5,
+              borderRadius: 8,
+              background: "rgba(6,6,10,0.72)",
+              backgroundImage:
+                "repeating-linear-gradient(135deg, rgba(255,255,255,0.045) 0px 2px, transparent 2px 11px)",
+            }}
+          />
+        )}
 
         {/* NEW badge */}
         {isNew && (

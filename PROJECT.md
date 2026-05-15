@@ -237,6 +237,18 @@ data_pipeline/output/
 
 Un seul dossier `images/`. Priorité : Liquipedia d'abord (meilleure qualité), PandaScore en fallback.
 
+**Couverture actuelle (500 joueurs) :**
+- 441 ont une photo locale (88%)
+  - 206 → source PandaScore (`image_url` CDN + fichier local)
+  - 235 → source Liquipedia uniquement
+- 59 → aucune photo (`no_photo: true`)
+
+**IDs distincts :** `player_id` interne ≠ ID PandaScore (ex: ZywOo = `11893` en interne, `18452` chez PandaScore). L'URL CDN PandaScore contient leur propre ID.
+
+**Caches :**
+- `liq_image_cache.json` — 344 entrées Liquipedia (clé = nom joueur)
+- `ps_players_cache.json` — 13 680 entrées PandaScore
+
 ```
 python photos.py           # télécharge tout (skip si fichier déjà présent)
 python photos.py --force   # re-download complet (écrase tout)
@@ -271,6 +283,168 @@ Tout est lié par `player_id` — teams, players, cards, images.
 ### Temps de scrape
 ~3-4h (delay=0.3s entre appels localhost)  
 Reprise automatique si interrompue grâce à `players_progress.json`
+
+---
+
+## Frontend — État actuel (mai 2026)
+
+### Composants implémentés
+- 4 tabs : Pack, Collection, Trade, Profil
+- Composants partagés : `TopBar`, `MiniCard`, `XPBar`, `Gem`, `BottomNav`
+- Design tokens dans `app/lib/tokens.ts`
+- Fonts : Manrope (display/body) + Space Mono (mono) via Google Fonts
+- Build propre, zéro erreur TypeScript
+
+### Flag.tsx
+Composant drapeau wrappant `flag-icons`. Props : `code` (ISO-2), `width` (défaut 18), `rounded` (défaut true). Render via `className="fi fi-{code}"` + sizing inline. Fallback `null` si code absent. `flag-icons` importé dans `layout.tsx`. Utiliser ce composant — pas de `<span>` inline direct.
+
+### MiniCard — DNA CardHolo
+Photo full-bleed, gradient noir bas. Taille défaut **84×124px** (ratio 1.476 — CARD_RATIO = 124/84, ne pas changer pour la grille collection).
+
+Layout :
+- TL : overall (24px fw=800) + rôle 3 lettres (6.5px, couleur chrome) en dessous
+- TR : `<Flag code={...} width={14} />`
+- Bas : nom (12px fw=800) + teamShort (6.5px) + panel stats dark optionnel (si `categoryScores` fourni)
+
+Détails visuels :
+- Glow halo : `radial-gradient(ellipse, ${chrome.glow}, transparent 70%)`, inset **-6px**, blur **8px**
+- Border : `rgba(255,255,255,0.18)`, shadow : `0 8px 22px rgba(0,0,0,0.55)`
+- Gradient bas : `transparent 25%, rgba(0,0,0,0.5) 65%, rgba(0,0,0,0.85) 100%`
+- Fond : `chrome.bg = linear-gradient(160deg, tier.from, tier.to)` via `rarityChrome()`
+- Prop `imageOffset?: string` → CSS `object-position` sur la photo (défaut `"top center"`)
+
+Props supplémentaires :
+- `locked?: boolean` → overlay sombre `rgba(6,6,10,0.72)` + rayures diagonales `repeating-linear-gradient(135deg, rgba(255,255,255,0.045) 0px 2px, transparent 2px 11px)` — utilisé pour les cartes non obtenues dans "Toutes"
+- `isNew?: boolean` → badge rouge "NEW" TL (zIndex 3, au-dessus du locked overlay)
+
+### CardDetailModal (`components/CardDetailModal.tsx`)
+- Photo full-bleed (270×390), gradient `rgba(0,0,0,0.93) → transparent 80%` depuis le bas
+- TL : overall (60px fw=800) + tier (9px, couleur chrome)
+- TR : `<span className="fi fi-{iso2}">` (22×16px) + rôle plein mot (ENT→"Entry", AWP→"AWPer", etc.)
+- Bottom overlay : nom (26px fw=800) + team mono (9.5px) + grille stats 3×2 (18px/7.5px, ligne top séparatrice uniquement, pas de barres entre cellules)
+- Boutons Détails / Trade en dessous (270px wide)
+- Stats : 6 `category_scores` (FIR/OPN/CLU/ENT/TRD/IMP) affichés en 3×2. **Non passés aux MiniCards de la grille** (seulement au modal).
+
+### Collection
+- Données réelles depuis `players_cards.json` via `loadCards()`, cache mémoire dans `cards.ts`
+- 4 dropdowns custom : Rarity colorée, Role full name, Team classée par rank, **PAYS** (loot pool)
+- Images : API route `/api/player-image/[player_id]` — sert local d'abord, redirect CDN Pandascore en fallback. `loadCards()` pointe toujours vers l'API locale.
+- `photo_focus` : champ optionnel dans `players_cards.json` (ex: `"photo_focus": "50% 26%"`). Mappé vers `image_offset` dans `CardDisplay` via `loadCards()`. Absent → fallback `"top center"`.
+- Rôles : normalisés et dédupliqués (AWPer/Awper/Awp → AWP, etc.), coaches/analysts filtrés
+
+**Layout accordéon (2 sections collapsibles) :**
+- `SectionDivider` → header cliquable avec chevron `▼` (rotate -90° quand collapsed), titre, badge count teal
+- **"Mes cartes"** : affiche toutes les cartes possédées d'un coup (grid libre, pas de pagination) — typiquement peu nombreuses. Filtres RARITY/ROLE/TEAM/PAYS appliqués. Empty state "Connecte-toi" si 0 cartes.
+- **"Toutes"** : `CardGrid` paginé (9/page), cartes non possédées affichées avec `locked=true` (overlay rayures diagonales). Filtres appliqués.
+- **Une seule pagination** en bas de page, commune aux deux sections, basée sur `filteredAll.length`. `page` state dans `CollectionGrid`, passé en prop à `CardGrid` (stateless côté pagination). Reset à 0 sur changement de filtre.
+
+**Architecture CardGrid :**
+```
+CollectionGrid (page state ici, totalPages basé sur filteredAll)
+  ├── Section "Mes cartes" — mineCards.map(), pas de slice
+  ├── Section "Toutes"    — CardGrid(page=page, cards=filteredAll)
+  └── Pagination unique   — −10 / Préc. / Suiv. / +10
+```
+
+**Sizing des cartes :**  
+`ResizeObserver` sur la largeur du container uniquement → `cardW = (containerWidth - 14*2 - 8*2) / 3`, `cardH = cardW * CARD_RATIO`. Pas de hauteur fixe, le container est `overflowY: auto`.
+
+### Filtre PAYS — loot pool hebdomadaire
+- `data_pipeline/output/loot_pool.json` — liste des `player_ids` du pool actuel + `week` + `expires_at`
+- `loadLootPool()` dans `cards.ts` — lit le fichier, retourne les codes ISO-2 des joueurs du pool
+- Dropdown PAYS toujours visible (appliqué aux deux sections)
+- **Règle d'affichage** : pays avec 5+ joueurs dans le dataset full → entrée individuelle avec drapeau ; <5 joueurs → regroupé par région
+- **Ordre** : pays individuels triés par count desc, puis régions triées par count desc
+- **Régions définies** (`REGIONS` dans `CollectionGrid.tsx`) :
+  - `EU_EST` → BA, EE, HR, HU, LT, ME, MK, RS, SK, XK
+  - `EU_NORD` → FI, IS, NO
+  - `EU_OUEST` → BE, CH, NL
+  - `AMER_SUD` → CL, GT, PE, UY
+  - `MOYEN_ORIENT` → IQ, JO, LB
+  - `OCEANIE` → NZ · `AFRIQUE` → ZA · `ASIE_CENT` → UZ
+- Pour mettre à jour le loot pool chaque semaine : modifier uniquement `loot_pool.json` (week + expires_at + player_ids), le dropdown se met à jour automatiquement
+
+### Références design (`from_claude_design/`)
+- `big_card_focus.html` — référence modale focus (portrait 270×390, photo full-bleed, gradient noir fort en bas, grille stats 3×2)
+- `A _ Grid foil 3 col.html` — grille 3 colonnes (84×124) : overall 24px, rôle 3 lettres TL, nom 12px, team 6.5px, drapeau TR
+- `D _ Portrait _m_me DNA_.html` = référence visuelle principale CardHolo
+- `cs vib_new_cards_visual/` (ui.jsx + screens.jsx) — nouveau dossier de référence UI
+- Rarity chromes déjà corrects dans `tokens.ts` (DIAMOND, GOLD, SILVER, BRONZE, ICON, LEGACY)
+
+> Design premium dark (pas neon, pas gacha) — rester dans l'espace "Sorare/VALORANT companion". Ne pas ajouter de couleurs saturées ou d'animations de glow.
+
+---
+
+## Architecture CSS — Learnings
+
+### App shell pattern (`globals.css`)
+```css
+html { height: 100%; overflow: hidden; display: flex; justify-content: center; }
+body { height: 100%; overflow: hidden; max-width: 430px; }
+main { height: 100%; overflow: hidden; }
+```
+→ Empêche tout scroll au niveau document. Chaque page gère son propre scroll.
+
+### Pattern par page
+- `height: "100%"` (pas `minHeight`) sur le wrapper page
+- **Scrollable** (Packs, Collection) : `overflowY: "auto"` sur le wrapper
+- **Fixe** (Trade, Profil) : pas d'overflow → le contenu doit tenir dans l'écran
+
+### Z-index hierarchy
+- Contenu : < 200
+- Dropdowns : 200
+- BottomNav : 300 (doit être > dropdowns)
+→ Si on ajoute des overlays, respecter cette hiérarchie.
+
+### Dropdowns `position: fixed`
+Les dropdowns `position: absolute` étendent le scroll du document même dans un container `overflow: hidden`. Solution : `position: fixed` + `getBoundingClientRect()` au clic pour calculer `top/left/width`. Voir `FilterDropdown` dans `CollectionGrid.tsx`.
+
+### `maxHeight` inline ignoré par Turbopack
+Dans ce setup Next.js 16 + Turbopack, `maxHeight` en inline style React n'est pas appliqué de façon fiable. Solution : classe CSS dans `globals.css` avec `!important`.
+```css
+.filter-dd { max-height: 220px !important; overflow-y: auto !important; }
+```
+
+### Grille de cartes adaptative
+- `gridTemplateRows: repeat(3, 1fr)` + `height: 100%` + `aspect-ratio` → conflit CSS, cartes carrées/décalées au zoom
+- **Solution fiable : `ResizeObserver` sur la largeur du container uniquement.** Ne jamais mesurer la hauteur.
+- Formule : `cardW = floor((containerWidth - PAD*2 - GAP*2) / 3)`, `cardH = floor(cardW * CARD_RATIO)`
+- Le container est `overflowY: auto` (scrollable), la grille n'a pas de `gridTemplateRows` forcé
+- `height: 100%` dans un flex container avec `alignItems: center` ne donne PAS la hauteur du container — utiliser `alignItems: stretch` ou des px explicites
+
+---
+
+## GRID Open Access
+
+Accepté sur portal.grid.gg, clé API dans `.env` (`GRID_API_KEY`).
+- Header : `x-api-key` (pas `x-auth-key`)
+- Base URL : `https://api-op.grid.gg/`
+- CS2 = titleId `28`
+
+### Données disponibles
+~1876 séries CS2 (oct-déc 2023) + 7202 (2024) + 6654 (2025) → historique depuis oct 2023.
+
+### ⚠️ Limitations critiques
+- **TIER 1 = ZÉRO DATA.** Vitality, NaVi, G2, Spirit, FaZe, MOUZ — aucun match accessible. BLAST/IEM/ESL Pro League/Majors (sauf open qualifs) bloqués. Seul le tier 2/3 est dispo (CCT, ESEA, Thunderpick...).
+- **Données joueurs bloquées :** fullName, age, imageUrl, nationality → on garde Pandascore pour ça
+- **Conséquence :** pas d'intégration GRID pour le calcul des category_scores (déséquilibre tier 1 vs tier 2). GRID réservé pour features distinctes (ex: derniers matchs tier 2/3).
+
+### Endpoints utiles
+- `POST /central-data/graphql` — allSeries (par période/titleId), players (id/nickname/team), teams, tournaments
+- `POST /live-data-feed/series-state/graphql` — seriesState(id), latestSeriesStateByPlayerId(id)
+
+### Stats joueur par match (SeriesPlayerState)
+kills, deaths, firstKill, killAssistsGiven, killAssistsReceived, multikills (doubles/triples/aces), weaponKills (par arme), teamkills, selfkills, structuresDestroyed, structuresCaptured, objectives
+
+---
+
+## Bugs connus
+
+### Mobile touch non fonctionnel
+Dropdowns RARITY/ROLE/TEAM non cliquables sur mobile. Fixes `touchstart` + `touchAction: "manipulation"` appliqués mais insuffisants.
+- Piste probable : z-index BottomNav couvrant les éléments, ou règle `touch-action` dans `globals.css`, ou overflow clipping parent
+- À investiguer : `BottomNav.tsx` z-index, `globals.css`, `layout.tsx` overflow
+- Note : le toggle Toutes/Mes cartes a été supprimé → remplacé par les `SectionDivider` accordéons
 
 ---
 
@@ -330,6 +504,18 @@ drop_weight = overall_score × (1 + mvp_bonus) × team_score × trophy_bonus
   trophy_bonus   = 1 + major_wins × 0.25 + top20_count × 0.05
 ```
 → Les meilleures cartes sont naturellement plus rares sans avoir besoin de tables de rareté fixes.
+
+**Buff événement tier S (non-Major) — hebdomadaire**
+Après un event tier S, les joueurs des équipes semi-finalistes et finalistes reçoivent un multiplicateur temporaire sur leur `drop_weight` dans le daily pack, actif jusqu'au prochain weekly refresh :
+
+| Placement | Multiplicateur |
+|---|---|
+| Winner | ×2 |
+| Finalist | ×2 |
+| Semifinalists | ×2 |
+
+Impact dans le pool global (~500 joueurs) : les ~20 joueurs concernés passent de ~5% à ~9.5% des drops combinés — perceptible sans déséquilibrer le pool.
+Source placement : csapi.de `/events/{id}/team/{team_id}/stats` → champ `placement`.
 
 ### Système de gemmes (décraft)
 Les gemmes sont **tiérisées par ranking d'équipe** — chaque tier est une monnaie séparée, non-convertible entre tiers.
@@ -514,22 +700,33 @@ Chaque carte a une version `vX.Y` :
 | Événement | Action | Ancienne carte |
 |---|---|---|
 | EVP gagné | Update stats silencieux | Pas de version bump |
-| Team gagne un event | v1 → v1.1 créée | v1 → Legacy |
 | Player gagne MVP | v1 → v1.1 créée | v1 → Legacy |
+| Nouveau classement TOP20 HLTV détecté | v1 → v1.x créée + tag "HLTV Top X YYYY" | v1 → Legacy |
 | Player change d'équipe | v1 → v2 créée | v1 → Legacy |
 
 ```
 Weekly refresh détecte :
-  evp_count augmente                    → update stats, pas de version
-  new["team"] != old["team"]            → Legacy + v2 créée
-  new["mvp_count"] > old["mvp_count"]   → Legacy + v1.1 créée
-  team a gagné un event                 → Legacy + v1.1 créée
-  sinon                                 → update silencieux des stats
+  evp_count augmente                         → update stats, pas de version
+  new["team"] != old["team"]                 → Legacy + v2 créée
+  new["mvp_count"] > old["mvp_count"]        → Legacy + v1.1 créée
+  new["top20_count"] > old["top20_count"]    → Legacy + v1.x créée, tag "HLTV Top X YYYY"
+  sinon                                      → update silencieux des stats
 ```
+
+> Un joueur classé plusieurs années de suite génère autant de Legacys distinctes (une par classement), chacune figée avec son année et son rang.
 
 - La carte Legacy est **figée** à l'instant T — plus jamais mise à jour par HLTV
 - Plus droppable dans les packs → devient rare naturellement
 - v1, v1.1, v2 d'un même joueur peuvent coexister dans différentes collections
+
+### Tag "Event Champions"
+Quand l'équipe d'un joueur gagne un event tier 1 (IEM / BLAST / PGL hors Major), la carte **active** reçoit un tag `"IEM Katowice 2025 Champions"` — elle ne passe pas Legacy.
+
+- Tag affiché sur la MiniCard et dans le modal (badge visuel + texte)
+- La carte reste droppable et mis à jour normalement
+- Si l'équipe gagne un autre event → le tag est remplacé par le plus récent
+- Source : PandaScore `/csgo/tournaments` (winner + tier S/A) — à ajouter au weekly refresh
+- Champ dans `players_cards.json` : `"event_champion": "IEM Katowice 2025"` (null si aucun)
 
 ### Classement top 100 dynamique
 Le scrape hebdo couvre un pool élargi (~250 teams) mais seules les top 100 sont droppables.
@@ -807,7 +1004,7 @@ TON PC (scraper local, cron hebdo)
     └── Cloudflare R2 (/images/*.png)  → stockage images (10GB free, egress gratuit)
                 ↓
             Vercel
-        Next.js 14 (frontend + API routes)
+        Next.js 16.2.6 (frontend + API routes)
                 ↓
             Supabase
         PostgreSQL (users, collections, gems, cooldowns, XP, trade)
@@ -824,11 +1021,33 @@ TON PC (scraper local, cron hebdo)
 
 ### Frontend
 ```
-Next.js 14 (App Router)
-Tailwind CSS
+Next.js 16.2.6 (App Router) + Tailwind 4 + TypeScript
+Code dans frontend/
 Vercel (auto-deploy au push GitHub)
 Phone-first — bottom nav 4 tabs, ok si desktop se sent que c'est mobile
 ```
+
+### Dev server — règle critique
+⚠️ **Toujours killer et relancer après CHAQUE modif de code.** Le HMR Turbopack ne recharge pas systématiquement les composants modifiés.
+```bash
+kill -9 $(ps aux | grep next-server | grep -v grep | awk '{print $2}') 2>/dev/null
+sleep 2 && cd frontend && npm run dev > /tmp/nextjs-dev.log 2>&1 &
+sleep 8 && tail -3 /tmp/nextjs-dev.log
+```
+
+**ChunkLoadError (cache Turbopack corrompu)** — arrive après plusieurs restarts rapides. Fix : vider le cache et relancer.
+```bash
+kill -9 $(ps aux | grep next-server | grep -v grep | awk '{print $2}') 2>/dev/null
+rm -rf frontend/.next
+sleep 2 && cd frontend && npm run dev > /tmp/nextjs-dev.log 2>&1 &
+sleep 12 && tail -3 /tmp/nextjs-dev.log
+```
+
+### Tunnel mobile (tests sur téléphone)
+`ngrok` déjà installé.
+1. `npm run dev -- --port 3000` (dans `frontend/`)
+2. Dans un autre terminal : `ngrok http 3000`
+3. Ouvrir `https://xxxx.ngrok-free.app` depuis le téléphone
 
 ### Flow update hebdo
 ```
@@ -858,9 +1077,10 @@ python main.py --refresh
 - [ ] Scrape complet des 487 joueurs
 - [ ] Définir les conditions de rareté (à revoir)
 - [x] Frontend Next.js — phone-first, 4 tabs (Pack, Collection, Trade, Profil)
-- [x] Collection — données réelles, filtres Rarity/Role/Team, pagination, modal détail
+- [x] Collection — données réelles, filtres Rarity/Role/Team/PAYS (loot pool), pagination, modal détail
 - [x] MiniCards — photo full-bleed, halo rareté, Flag CSS, imageOffset (photo_focus)
-- [ ] Pack opening + timers Clash Royale style
+- [x] Pack queue + timers — file d'attente (max 2), countdown live, skip pub, CTA bonus
+- [ ] Pack opening animation — révélation des 5 cartes une par une
 - [ ] Système de level + XP
 - [ ] Trade want/have market
 - [ ] Intégration ads
@@ -881,8 +1101,9 @@ python main.py --refresh
 1. Scrape 100 teams × 2 endpoints  (200 calls rapides, pas FlareSolverr)
 2. Lineup diff    → joueurs partis = Legacy + nouvelle carte
 3. AchievementCount diff → fetch achievements joueurs concernés
-   → mvp_count augmenté  → v1.1
-   → evp_count augmenté  → stat recalc
+   → mvp_count augmenté    → v1.1
+   → top20_count augmenté  → v1.x + tag "HLTV Top X YYYY"
+   → evp_count augmenté    → stat recalc
 4. Update stats tous joueurs actifs  (487 calls FlareSolverr ~1h avec 3 workers)
 Total estimé : ~1h15
 ```

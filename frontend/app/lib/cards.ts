@@ -97,6 +97,7 @@ function resolveImage(p: PlayerCard): string | null {
 }
 
 let _cache: CardDisplay[] | null = null;
+let _lootCache: string[] | null = null;
 
 export function loadCards(): CardDisplay[] {
   if (_cache) return _cache;
@@ -130,4 +131,15 @@ export function loadCards(): CardDisplay[] {
     }));
 
   return _cache;
+}
+
+export function loadLootPool(): string[] {
+  if (_lootCache) return _lootCache;
+  const filePath = path.join(process.cwd(), "../data_pipeline/output/loot_pool.json");
+  if (!fs.existsSync(filePath)) return [];
+  const raw = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+  const poolIds = new Set<string>(raw.player_ids ?? []);
+  const cards = loadCards();
+  _lootCache = [...new Set(cards.filter((c) => poolIds.has(c.player_id)).map((c) => c.nationality).filter(Boolean))];
+  return _lootCache;
 }
