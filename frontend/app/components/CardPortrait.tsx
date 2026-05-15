@@ -1,5 +1,6 @@
 import { F, RarityTier, rarityChrome } from "../lib/tokens";
 import { CategoryScores } from "../lib/cards";
+import Flag from "./Flag";
 
 export interface CardPortraitData {
   name?: string;
@@ -11,7 +12,9 @@ export interface CardPortraitData {
   imageUrl?: string | null;
   noPhoto?: boolean;
   categoryScores?: CategoryScores;
-  nationality?: string;
+  nationality?: string | null;
+  /** CSS `object-position` value — e.g. "50% 26%". Defaults to "top center". */
+  imageOffset?: string;
 }
 
 const STAT_LABELS: [keyof CategoryScores, string][] = [
@@ -22,13 +25,6 @@ const STAT_LABELS: [keyof CategoryScores, string][] = [
   ["trading", "TRD"],
   ["impact", "IMP"],
 ];
-
-function flagEmoji(code?: string): string {
-  if (!code || code.length !== 2) return "";
-  return Array.from(code.toUpperCase())
-    .map((c) => String.fromCodePoint(127397 + c.charCodeAt(0)))
-    .join("");
-}
 
 export default function CardPortrait({
   p,
@@ -50,10 +46,9 @@ export default function CardPortrait({
       <div
         style={{
           position: "absolute",
-          inset: -8,
+          inset: -10,
           background: `radial-gradient(ellipse, ${chrome.glow} 0%, transparent 70%)`,
-          filter: "blur(10px)",
-          opacity: 0.9,
+          filter: "blur(12px)",
         }}
       />
 
@@ -98,7 +93,7 @@ export default function CardPortrait({
                 width: "100%",
                 height: "100%",
                 objectFit: "cover",
-                objectPosition: "top center",
+                objectPosition: p?.imageOffset ?? "top center",
               }}
             />
           ) : (
@@ -161,8 +156,8 @@ export default function CardPortrait({
             }}
           >
             {p?.nationality && (
-              <div style={{ fontSize: 22, lineHeight: 1, marginBottom: 4 }}>
-                {flagEmoji(p.nationality)}
+              <div style={{ lineHeight: 1, marginBottom: 4 }}>
+                <Flag code={p.nationality} width={22} />
               </div>
             )}
             <div

@@ -54,6 +54,7 @@ Liquipedia MediaWiki API                   → achievements (MVP, Top20, Majors)
 | Rating, ADR, KAST, swing, K, D, N | csapi.de | `/players/{id}` |
 | Stats agrégées par map | csapi.de | `/players/{id}/stats/maps` *(dispo, non utilisé)* |
 | Stats agrégées par event | csapi.de | `/players/{id}/stats/events` *(dispo, non utilisé)* |
+| `photo_focus` | Manuel | Champ optionnel dans `players_cards.json` — CSS `object-position` (ex: `"50% 26%"`) pour recadrer les photos mal cadrées. Absent → fallback `"top center"`. |
 | Photo (image_url) | PandaScore | `/csgo/players` |
 | Nationalité + code ISO | PandaScore + mapping | `/csgo/players` → `_nat_iso()` |
 | Prénom, nom réel, âge | PandaScore | `/csgo/players` |
@@ -856,7 +857,9 @@ python main.py --refresh
 - [x] Processor : raretés + scores normalisés
 - [ ] Scrape complet des 487 joueurs
 - [ ] Définir les conditions de rareté (à revoir)
-- [ ] Frontend Next.js — phone-first, 4 tabs
+- [x] Frontend Next.js — phone-first, 4 tabs (Pack, Collection, Trade, Profil)
+- [x] Collection — données réelles, filtres Rarity/Role/Team, pagination, modal détail
+- [x] MiniCards — photo full-bleed, halo rareté, Flag CSS, imageOffset (photo_focus)
 - [ ] Pack opening + timers Clash Royale style
 - [ ] Système de level + XP
 - [ ] Trade want/have market

@@ -1,5 +1,6 @@
 import { C, F, RarityTier, rarityChrome } from "../lib/tokens";
 import { CategoryScores } from "../lib/cards";
+import Flag from "./Flag";
 
 export interface CardData {
   name?: string;
@@ -9,7 +10,9 @@ export interface CardData {
   imageUrl?: string | null;
   noPhoto?: boolean;
   categoryScores?: CategoryScores;
-  nationality?: string;
+  nationality?: string | null;
+  /** CSS `object-position` value — e.g. "50% 26%". Defaults to "top center". */
+  imageOffset?: string;
 }
 
 const STAT_LABELS: [keyof CategoryScores, string][] = [
@@ -73,10 +76,9 @@ export default function MiniCard({
       <div
         style={{
           position: "absolute",
-          inset: -4,
-          background: `radial-gradient(ellipse, ${chrome.glow} 0%, transparent 65%)`,
-          filter: "blur(6px)",
-          opacity: 0.7,
+          inset: -6,
+          background: `radial-gradient(ellipse, ${chrome.glow} 0%, transparent 70%)`,
+          filter: "blur(8px)",
         }}
       />
 
@@ -88,8 +90,8 @@ export default function MiniCard({
           height: "100%",
           borderRadius: 8,
           overflow: "hidden",
-          border: "1px solid rgba(255,255,255,0.16)",
-          boxShadow: "0 6px 18px rgba(0,0,0,0.55)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          boxShadow: "0 8px 22px rgba(0,0,0,0.55)",
           background: chrome.bg,
           color: "#fff",
           fontFamily: F.body,
@@ -107,7 +109,7 @@ export default function MiniCard({
               width: "100%",
               height: "100%",
               objectFit: "cover",
-              objectPosition: "top center",
+              objectPosition: p?.imageOffset ?? "top center",
             }}
           />
         ) : (
@@ -126,7 +128,7 @@ export default function MiniCard({
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(180deg, transparent 22%, rgba(0,0,0,0.45) 58%, rgba(0,0,0,0.88) 100%)",
+              "linear-gradient(180deg, transparent 25%, rgba(0,0,0,0.5) 65%, rgba(0,0,0,0.85) 100%)",
             pointerEvents: "none",
           }}
         />
@@ -137,7 +139,7 @@ export default function MiniCard({
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.07) 50%, transparent 65%)",
+              "linear-gradient(120deg, transparent 35%, rgba(255,255,255,0.08) 50%, transparent 65%)",
             pointerEvents: "none",
           }}
         />
@@ -174,10 +176,7 @@ export default function MiniCard({
         {/* TR — flag */}
         {p?.nationality && (
           <div style={{ position: "absolute", top: 7, right: 7, zIndex: 2 }}>
-            <span
-              className={`fi fi-${p.nationality.toLowerCase()}`}
-              style={{ width: 12, height: 9, display: "block", borderRadius: 1, boxShadow: "0 1px 3px rgba(0,0,0,0.5)" }}
-            />
+            <Flag code={p.nationality} width={14} />
           </div>
         )}
 

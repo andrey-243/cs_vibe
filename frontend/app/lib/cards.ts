@@ -14,6 +14,8 @@ export interface PlayerCard {
   no_photo: boolean;
   rarity: string;
   overall: number;
+  /** Optional CSS `object-position` override for the photo — e.g. "50% 26%" */
+  photo_focus?: string;
   category_scores: {
     firepower: number;
     opening: number;
@@ -45,6 +47,7 @@ export interface CardDisplay {
   tier: RarityTier;
   image_url: string | null;
   no_photo: boolean;
+  image_offset?: string;
   category_scores: CategoryScores;
 }
 
@@ -122,6 +125,7 @@ export function loadCards(): CardDisplay[] {
       tier: RARITY_MAP[p.rarity?.toLowerCase()] ?? "BRONZE",
       image_url: resolveImage(p),
       no_photo: p.no_photo ?? true,
+      image_offset: p.photo_focus,
       category_scores: p.category_scores ?? { firepower: 0, opening: 0, clutching: 0, entrying: 0, trading: 0, impact: 0 },
     }));
 

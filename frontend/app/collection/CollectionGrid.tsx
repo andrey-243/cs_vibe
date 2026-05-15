@@ -342,7 +342,7 @@ export default function CollectionGrid({ cards }: { cards: CardDisplay[] }) {
               return c ? (
                 <MiniCard
                   key={c.player_id}
-                  p={{ name: c.name, overall: c.overall, role: c.role, teamShort: c.teamShort, imageUrl: c.image_url, noPhoto: c.no_photo, nationality: c.nationality }}
+                  p={{ name: c.name, overall: c.overall, role: c.role, teamShort: c.teamShort, imageUrl: c.image_url, noPhoto: c.no_photo, nationality: c.nationality, imageOffset: c.image_offset }}
                   tier={c.tier}
                   w={cardSize.w}
                   h={cardSize.h}
@@ -419,6 +419,7 @@ export default function CollectionGrid({ cards }: { cards: CardDisplay[] }) {
                 noPhoto: selected.no_photo,
                 categoryScores: selected.category_scores,
                 nationality: selected.nationality,
+                imageOffset: selected.image_offset,
               }
             : null
         }
