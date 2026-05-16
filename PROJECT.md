@@ -298,9 +298,15 @@ Reprise automatique si interrompue grâce à `players_progress.json`
 ### Daily Challenges + Streak (tab Pack)
 - `app/lib/challenges.ts` — pool 11 variantes, 5 quests/jour (1 par kind group), seed déterministe par date, localStorage + reset minuit auto, hooks `onPackOpened` / `onCardsObtained` / `onTradeCompleted` / `onCardsDecrafted`
 - Nation du jour : ISO2 tiré aléatoirement chaque jour, même nation pour tous les joueurs, affiché avec `<Flag>` inline
-- Widget DÉFIS : count réel X/5, % progression, countdown jusqu'à minuit avec secondes (live)
-- Widget STREAK : UI 7 cases existante (non fonctionnelle — logique à brancher en V2 avec auth)
-- XP accordé automatiquement à la complétion via `addXP()`
+- Widget DÉFIS : count réel X/5, barre de progression, countdown jusqu'à minuit avec secondes (live)
+- Widget STREAK : UI 7 cases (streak en jours, badge ×XP, hint palier suivant) — logique localStorage complète
+- **XP via clic "Récupérer ✦"** : l'XP n'est pas accordé automatiquement — le joueur clique pour récupérer, déclenche une animation shimmer + 8 particules gauche→droite (620ms), puis la quête passe en vue compacte (hauteur ÷2)
+- **Tri automatique** : quêtes complétées (done) descendent en bas, quêtes à faire remontent en haut
+- **Reroll** : bouton "▶ REROLL · N" sur chaque quête non complétée. Max 3/jour. Pioche dans le pool complet (11 challenges) indépendamment de la catégorie — `complete_trade` est donc rerollable vers n'importe quelle autre quête. Seuls les challenges déjà actifs (par id) sont exclus. Le count restant est affiché directement dans le bouton (`▶ REROLL · 2`), pas dans une ligne séparée.
+- **Cap 100 XP/jour** (base avant streak mult) : `getDailyChallenges()` dégrade déterministement la quête la plus chère si le total dépasse 100 (ordre : rarity → open_packs → decraft)
+- **Bonus "all complete"** : quand les 5 objectifs sont atteints, le header "DÉFIS DU JOUR" pulse en or et devient cliquable → récompense = total XP du jour × 1.5 arrondi au multiple de 5. Passe ensuite par `addXP()` (streak mult appliqué dessus).
+- **Vue compacte post-claim** : checkmark 14px + label 10px + XP 9px, fond vert faint — hauteur ~50% vs vue normale
+- **Migration** : si `claimed` absent du localStorage (ancien format), toutes les quêtes `done:true` sont auto-marquées `claimed:true` au chargement
 - 540 combinaisons uniques de quests (~1.5 ans sans répétition exacte)
 
 ### Pack opening — animation complète
@@ -321,15 +327,36 @@ Séquence en 3 phases déclenchée par "Ouvrir →" sur un pack prêt.
 **Phase 3 — flip reveal (par carte, auto-avancement)**
 - La carte apparaît en grand (200×295px) avec animation rotateY(-90deg → 0deg) + léger overshoot à 6° + translateY(40px → 0)
 - Sweep de sheen traverse la carte après le flip
-- Affiche : photo full-bleed, overall (34px), rôle, drapeau, nom, teamShort
+- Affiche : photo full-bleed, overall (34px), rôle, drapeau, nom, **full team name** (`card.team ?? card.teamShort`)
 - **Pas de bouton** — auto-avancement après 1800ms (550ms flip + ~1250ms de visualisation)
-- Après toutes les cartes : écran récap centré + "CONTINUER"
+- Après toutes les cartes : écran récap centré + actions de masse
 
 **Phase 4 — récap centré**
 - Grille 3+2 de `RecapCard` (photo cards ~120px de large) centrée verticalement sur l'écran
 - Le stage et le compteur sont démontés pendant le récap (pas d'espace mort qui décale le contenu)
 - Chaque carte est **cliquable** → ouvre `CardDetailModal` (z-index 500, au-dessus du modal pack à 400)
 - `CardDetailModal` reçoit `categoryScores` depuis la carte → stats FIR/OPN/CLU/ENT/TRD/IMP affichées
+
+**Actions de masse (sous la grille) :**
+
+3 boutons empilés, avec flow preview→confirm pour les uncraft :
+
+| Bouton | Comportement |
+|---|---|
+| **TOUT GARDER** | Ferme le modal — toutes les cartes restent en stock |
+| **UNCRAFT DUPES · N doublon(s)** | Visible si au moins une carte n'est pas `isNew`. Uncraft les non-new, garde les new en stock. |
+| **UNCRAFT RARITY ▾** | Se déploie en ligne de boutons par tier. `BRZ+` `SLV+` `GLD+` `DIA+` `ICN+` — seuls les tiers présents dans le pack sont affichés. `X+` = uncraft X et tous les tiers inférieurs. |
+
+**Flow preview (uncraft) :**
+1. Clic sur un bouton uncraft → aperçu : compte de cartes + gemmes par tier (colorées par tier)
+2. `ANNULER` → retour au select | `CONFIRMER` → `removeOwnedId` + `addGems` + `onCardsDecrafted` + fermeture
+
+**Calcul gems dans le récap :**
+- Montant par rareté : Bronze 5 · Silver 12 · Gold 30 · Diamond 75 · Icon 400 · Legacy 30
+- Tier gem : calculé depuis `card.teamRank` (même logique que `CardDetailModal`)
+- Les cartes LEGACY sont incluses dans "Uncraft Dupes" mais exclues du filtre "Uncraft Rarity" (non présentes dans `TIER_ORDER`)
+- Preview triée TOP5 → TOP100, noms affichés via `GEM_PACK_NAMES` (ex: "S-Tier", "Tier 3") — jamais les clés internes TOPX
+- Couleurs : TOP5 `#f5d76e` / TOP15 `#c77dff` / TOP25 `#4cc9f0` / TOP50 `#56d6a4` / TOP75 `#80e0b0` / TOP100 `#8fa3ad`
 
 **Fichiers clés :**
 - `app/lib/reveal.ts` — moteur d'animation. Exports : `openPack`, `spinWheel`, `playLanding`, `reset`, `RARITY`. Web Audio API, safe SSR.
@@ -339,11 +366,12 @@ Séquence en 3 phases déclenchée par "Ouvrir →" sur un pack prêt.
 
 **Interface `RevealCard` :**
 ```ts
-{ tier, ovr, name, player_id, role, teamShort, teamRank?, nationality, image_offset, categoryScores?,
+{ tier, ovr, name, player_id, role, team?, teamShort, teamRank?, nationality, image_offset, categoryScores?,
   isNew?: boolean,      // true = première copie jamais obtenue
   stockCount?: number   // nb de copies possédées AVANT l'ouverture de ce pack
 }
 ```
+`team` = nom complet de l'équipe (ex: "Team Vitality") — affiché dans le flip reveal. `teamShort` = fallback si absent.
 `categoryScores` = `{ firepower, opening, clutching, entrying, trading, impact }` — passé depuis l'API et transmis à `CardDetailModal` via `revealCardToPortrait()`.  
 `teamRank` = rank HLTV de l'équipe — utilisé pour calculer le tier de gems lors d'un Uncraft.
 
@@ -547,26 +575,28 @@ Props supplémentaires :
 - Rangée 2 (actions) : **Trade** (grisé, non implémenté) | **Uncraft**
 
 **Uncraft — flow :**
-1. Clic "Uncraft" → bouton se transforme en `{X} 💎 {TOPXX} · Confirmer` (couleur gem du tier) + `✕ Annuler` à gauche
+1. Clic "Uncraft" → bouton se transforme en `{X} 💎 {Tier} · Confirmer` (ex: `75 💎 Tier 1.5`, couleur gem du tier) + `✕ Annuler` à gauche
 2. Clic confirmation → `removeOwnedId(player_id)` + `addGems(tier, amount)` + `onCardsDecrafted(1)` + fermeture modale
 3. Désactivé (grisé) si `ownedCount === 0` (carte non possédée — vue locked dans "Toutes")
 
 **Montants Uncraft :** Bronze 5 · Silver 12 · Gold 30 · Diamond 75 · Legacy 30 · Icon 400  
-**Tier gem :** calculé depuis `card.teamRank` — TOP5 (#1–5), TOP15 (#6–15), TOP25 (#16–25), TOP50 (#26–50), TOP75 (#51–75), TOP100 (#76+)
+**Tier gem :** calculé depuis `card.teamRank` — TOP5 (#1–5), TOP15 (#6–15), TOP25 (#16–25), TOP50 (#26–50), TOP75 (#51–75), TOP100 (#76+)  
+**Label tier affiché :** `GEM_PACK_NAMES[gTier]` → ex: `S-Tier`, `Tier 1.5`, `Tier 4` (sans "pack")
 
 **Props :** `card: CardPortraitData` (inclut `player_id`, `teamRank`) · `tier: RarityTier` · `ownedCount?: number` · `onClose`  
 `ownedCount` passé depuis CollectionGrid (`ownedCounts[player_id]`) et PackOpenModal (`stockCount + 1`).
 
 ### Collection
 - Données réelles depuis `players_cards.json` via `loadCards()`, cache mémoire dans `cards.ts`
-- 4 dropdowns custom : Rarity colorée, Role full name, Team classée par rank, **PAYS** (loot pool)
+- 4 dropdowns custom : Rarity colorée, Role full name, **TIER** (gem tier, S-Tier → Tier 4), **PAYS** (loot pool)
+- Filtre TIER : options statiques `TIER_OPTIONS` depuis `GEM_PACK_NAMES` + `GEM_COLORS`. Filtrage via `cardGemTier(teamRank)` → TOP5/TOP15/.../TOP100. Remplace l'ancien filtre TEAM.
 - Images : API route `/api/player-image/[player_id]` — sert local d'abord, redirect CDN Pandascore en fallback. `loadCards()` pointe toujours vers l'API locale.
 - `photo_focus` : champ optionnel dans `players_cards.json` (ex: `"photo_focus": "50% 26%"`). Mappé vers `image_offset` dans `CardDisplay` via `loadCards()`. Absent → fallback `"top center"`.
 - Rôles : normalisés et dédupliqués (AWPer/Awper/Awp → AWP, etc.), coaches/analysts filtrés
 
 **Layout accordéon (2 sections collapsibles) :**
 - `SectionDivider` → header cliquable avec chevron `▼` (rotate -90° quand collapsed), titre, badge count teal
-- **"Mes cartes"** : affiche toutes les cartes possédées d'un coup (grid libre, pas de pagination) — typiquement peu nombreuses. Filtres RARITY/ROLE/TEAM/PAYS appliqués. Empty state "Connecte-toi" si 0 cartes.
+- **"Mes cartes"** : affiche toutes les cartes possédées d'un coup (grid libre, pas de pagination) — typiquement peu nombreuses. Filtres RARITY/ROLE/TIER/PAYS appliqués. Empty state "Connecte-toi" si 0 cartes.
 - **"Toutes"** : `CardGrid` paginé (9/page), cartes non possédées affichées avec `locked=true` (overlay rayures diagonales). Filtres appliqués.
 - **Une seule pagination** en bas de page, commune aux deux sections, basée sur `filteredAll.length`. `page` state dans `CollectionGrid`, passé en prop à `CardGrid` (stateless côté pagination). Reset à 0 sur changement de filtre.
 
@@ -673,7 +703,7 @@ kills, deaths, firstKill, killAssistsGiven, killAssistsReceived, multikills (dou
 ## Bugs connus
 
 ### Mobile touch non fonctionnel
-Dropdowns RARITY/ROLE/TEAM non cliquables sur mobile. Fixes `touchstart` + `touchAction: "manipulation"` appliqués mais insuffisants.
+Dropdowns RARITY/ROLE/TIER non cliquables sur mobile. Fixes `touchstart` + `touchAction: "manipulation"` appliqués mais insuffisants.
 - Piste probable : z-index BottomNav couvrant les éléments, ou règle `touch-action` dans `globals.css`, ou overflow clipping parent
 - À investiguer : `BottomNav.tsx` z-index, `globals.css`, `layout.tsx` overflow
 - Note : le toggle Toutes/Mes cartes a été supprimé → remplacé par les `SectionDivider` accordéons
@@ -784,34 +814,56 @@ Source placement : csapi.de `/events/{id}/team/{team_id}/stats` → champ `place
 ### Système de gemmes (décraft)
 Les gemmes sont **tiérisées par ranking d'équipe** — chaque tier est une monnaie séparée, non-convertible entre tiers.
 
-| Tier | Équipes | Gem |
-|---|---|---|
-| TOP 5 | #1 → #5 | 💎 TOP 5 |
-| TOP 15 | #6 → #15 | 💎 TOP 15 |
-| TOP 25 | #16 → #25 | 💎 TOP 25 |
-| TOP 50 | #26 → #50 | 💎 TOP 50 |
-| TOP 75 | #51 → #75 | 💎 TOP 75 |
-| TOP 100 | #76 → #100 | 💎 TOP 100 |
+### Nomenclature des tiers de gemmes
+
+| Clé interne | Party name | Tier label | Équipes |
+|---|---|---|---|
+| TOP5 | **CHOSEN FEW** | S-Tier | #1 → #5 |
+| TOP15 | **PRETENDERS** | Tier 1 | #6 → #15 |
+| TOP25 | **GATEKEEPERS** | Tier 1.5 | #16 → #25 |
+| TOP50 | **GRINDERS** | Tier 2 | #26 → #50 |
+| TOP75 | **PICK'EM KILLERS** | Tier 3 | #51 → #75 |
+| TOP100 | **NO LAN NO FAME** | Tier 4 | #76 → #100 |
+
+Constantes dans `tokens.ts` :
+- `GEM_PARTY_NAMES` → nom "party" du tier (ex: `TOP5 = "CHOSEN FEW"`)
+- `GEM_PACK_NAMES` → label court sans "pack" (ex: `TOP5 = "S-Tier"`, `TOP25 = "Tier 1.5"`)
 
 **`app/lib/gems.ts` — store client (localStorage)**
 - Clé `csv_gems` → `Record<string, number>` (tier → count)
 - `getGems()` → counts courants
 - `addGems(tier, amount)` → incrémente + dispatche `window.Event("csv-gems-updated")`
 - `removeGems(tier, amount)` → décrémente (clamp 0, supprime la clé si vide) + dispatche event
-- TopBar `GemsButton` et tab Profil écoutent `csv-gems-updated` → mise à jour temps réel sans reload
+- TopBar level pill et tab Profil écoutent `csv-gems-updated` → mise à jour temps réel sans reload
 - `removeOwnedId(id)` ajouté à `owned.ts` — décrémente le count, supprime la clé si 0
+
+**TopBar — layout (1 ligne)**
+
+> ⚠️ Design fonctionnel — à revoir en V1.1
+
+```
+[LVL pill (hover→gems)] [══XP bar══ (hover→XP)] [chip → Next rank / reward]
+```
+
+- **Level pill** (gauche) : `LVL N` + nom rank, fond gold translucide. Hover → dropdown gems (`GEM_PACK_NAMES[tier]` + count).
+- **XP bar** (centre, flex:1) : hover → tooltip `X / Y XP` (XP dans le niveau / XP total du niveau).
+- **Chip next level** (droite) : fond `rgba(255,255,255,0.05)` + bordure, `→ Silver IV` (bold 10px) + récompense en teal 8px en dessous.
+  - Récompenses par palier (`nextLevelReward(nextLevel)`) :
+    - Lvl 7 → `Pack TOP100` · Lvl 18 → `Pack TOP25` · Lvl 28 → `Pack TOP10` · Lvl 41 → `Pack ICON`
+    - Faceit + ESEA → `+Pack · Gems` · Silver/Gold/MG/LE → `+1 Pack`
 
 **UI gems — tab Profil (`app/profil/page.tsx`)**
 - Seuil craft : `CRAFT_THRESHOLD = 250` gems par tier
+- Chaque row : `GEM_PACK_NAMES[tier]` (`S-Tier`) en gras 11px + `GEM_PARTY_NAMES[tier]` (`CHOSEN FEW`) en mono 8px faint en dessous
 - Barre de progression : `amount / 250 × 100%` — pleine = pack craftable
 - Quand `amount >= 250` : la barre est remplacée par un badge **PACK DISPO** centré, couleur du tier, animation `gem-pulse` (glow respirant 1.8s, style "NEW!" des cartes)
 - Système Convertir (bouton toggle, panel inline) :
   ```
-  100 TOP100 → 10 TOP75    boutons ×1 · ×10 · ×100 · ALL
-   10 TOP75  →  1 TOP50    boutons ×1 · ×10 · ×100 · ALL
-    5 TOP50  →  1 TOP25    boutons ×1 · ×10 · ×100 · ALL
-    5 TOP25  →  1 TOP15    boutons ×1 · ×10 · ×100 · ALL
-    5 TOP15  →  1 TOP5     boutons ×1 · ×10 · ×100 · ALL
+  100 NO LAN NO FAME → 10 PICK'EM KILLERS    boutons ×1 · ×10 · ×100 · ALL
+   10 PICK'EM KILLERS →  1 GRINDERS           boutons ×1 · ×10 · ×100 · ALL
+    5 GRINDERS        →  1 GATEKEEPERS        boutons ×1 · ×10 · ×100 · ALL
+    5 GATEKEEPERS     →  1 PRETENDERS         boutons ×1 · ×10 · ×100 · ALL
+    5 PRETENDERS      →  1 CHOSEN FEW         boutons ×1 · ×10 · ×100 · ALL
   ```
   - Chaque bouton activé si `gems[from] >= cost × times` ; ALL = `Math.floor(gems[from] / cost)`
   - Clic → `removeGems(from, cost × times)` + `addGems(to, gain × times)` → event → UI live
@@ -828,20 +880,21 @@ Les gemmes sont **tiérisées par ranking d'équipe** — chaque tier est une mo
 | Icon | 400 |
 
 **Craft (gems → pack) :**
-- 250 gems d'un tier → pack thématique garanti dans ce tier
+- 250 gems d'un tier → pack thématique garanti dans ce tier (ex: 250 GRINDERS → 1 Tier 2 pack)
+- Lors du craft : afficher party name + full pack name (`CHOSEN FEW — S-Tier pack`)
 - Choix : par équipe (joueur garanti de l'équipe) OU par nationalité (filtre sur `nationality`)
 
 **Conversion ascendante (sink pour Bronze/Silver)**
 ```
-100 TOP100 → 10 TOP75
- 10 TOP75  →  1 TOP50
-  5 TOP50  →  1 TOP25
-  5 TOP25  →  1 TOP15
-  5 TOP15  →  1 TOP5
+100 NO LAN NO FAME (TOP100) → 10 PICK'EM KILLERS (TOP75)
+ 10 PICK'EM KILLERS (TOP75) →  1 GRINDERS (TOP50)
+  5 GRINDERS (TOP50)        →  1 GATEKEEPERS (TOP25)
+  5 GATEKEEPERS (TOP25)     →  1 PRETENDERS (TOP15)
+  5 PRETENDERS (TOP15)      →  1 CHOSEN FEW (TOP5)
 ```
 - Donne de la valeur aux doublons Bronze/Silver
-- Taux punissants : TOP100 → TOP5 nécessite ~125 000 gems (pratiquement impossible)
-- Usage réel : 1-2 tiers au-dessus (ex: 2500 TOP100 gems → 250 TOP75 → 1 pack garanti TOP75)
+- Taux punissants : NO LAN NO FAME → CHOSEN FEW nécessite ~125 000 gems (pratiquement impossible)
+- Usage réel : 1-2 tiers au-dessus (ex: 2500 NO LAN NO FAME → 250 PICK'EM KILLERS → 1 Tier 3 pack)
 
 > ⚠️ Équilibrage national à prévoir : certaines nations (Danemark, France) sont sur-représentées dans les hauts tiers → à ajuster en V2 (coût variable selon la densité de joueurs par nation/tier)
 
@@ -1299,7 +1352,7 @@ Les cartes Legacy et Major gardent leur `trade_cost` figé au moment du freeze.
 
 ## Daily Challenges
 
-5 challenges par jour, reset à minuit. Exactement 1 par groupe de kind — jamais 2 du même type. Reroll d'un challenge via pub.
+5 challenges par jour, reset à **minuit heure locale** (date calculée côté client en local, pas UTC). Exactement 1 par groupe de kind au départ — jamais 2 du même type initialement, mais un reroll peut amener un doublon de kind. Reroll d'un challenge via pub (max 3/jour).
 
 Pool de challenges (tirage aléatoire parmi) :
 ```
@@ -1316,7 +1369,36 @@ Décraft 5 cartes                   →  18 XP
 Obtenir un joueur de nation {X}    →  15 XP
 ```
 
+**Cap 100 XP/jour (base)** : si la sélection seeded dépasse 100 XP, la quête la plus chère est dégradée déterministement (rarity → open_packs → decraft). Le streak mult s'applique ensuite via `addXP()`, donc l'XP réel peut dépasser 100 avec un streak élevé.
+
 **Nation du jour** : une nationalité tirée aléatoirement chaque jour (parmi les nations présentes dans le dataset). Affichée avec le drapeau dans le challenge. Même nation pour tous les joueurs ce jour-là.
+
+**Flow claim** :
+1. Objectif atteint → bouton "Récupérer ✦" apparaît (teal)
+2. Clic → animation shimmer + particules gauche→droite (620ms) → `addXP(xp)` → vue compacte
+3. Quêtes complétées trient automatiquement vers le bas
+
+**Bonus all-complete** :
+- Quand les 5 objectifs sont atteints, le header pulse en or et devient cliquable
+- Récompense = total XP du jour × 1.5 arrondi au multiple de 5 (ex : 93 XP → 140 XP brut)
+- L'XP passe par `addXP()` → streak mult appliqué dessus
+- Non cumulable : 1 bonus/jour max, stocké dans `bonusClaimed` du localStorage
+- Le countdown reset s'affiche dans tous les états du header (y compris après bonus récupéré)
+
+**Dates — heure locale** :
+- `todayStr()` dans `challenges.ts` et `touchStreak()` dans `streak.ts` utilisent la date locale (pas UTC)
+- Reset challenges et streak se font à **00h00 heure locale** (pas 02h00 comme avec UTC en CEST)
+
+**État localStorage (`csv-challenges`)** :
+```
+date          : string                    ← reset auto si date ≠ aujourd'hui
+progress      : Record<id, number>        ← progression par challenge
+done          : Record<id, bool>          ← objectif atteint
+claimed       : Record<id, bool>          ← XP récupéré (clic "Récupérer")
+rerollsUsed   : number                    ← 0–3
+rerolledKinds : Record<kind, Template>    ← override template complet si rerollé
+bonusClaimed  : bool                      ← bonus all-complete récupéré
+```
 
 ---
 
@@ -1328,7 +1410,8 @@ Récompense la fidélité sur la durée. Deux queues indépendantes (daily + bon
 
 | Semaine | Jours | Daily slots | Spawn daily | Queue daily max | Ads slot | XP mult (daily) | Drop Gold | Drop Dia | Drop Icon | Milestone |
 |---------|-------|-------------|-------------|-----------------|----------|-----------------|-----------|----------|-----------|-----------|
-| S1 | J1–J6 | 1 | /12h | 2 | ✅ 1 | ×1.05 | — | — | — | — |
+| base | J1 | 1 | /12h | 1 | ✅ 1 | ×1.00 | — | — | — | — |
+| S1 | J2–J6 | 1 | /12h | 2 | ✅ 1 | ×1.05 | — | — | — | — |
 | **S2 ★** | J7–J13 | **2** | /12h | **3** | ✅ 1 | **×1.13** | **×1.13** | **×1.08** | **×1.05** | J7 |
 | **S3 ★** | J14–J20 | 2 | /12h | 3 | ✅ 1 | **×1.25** | **×1.25** | **×1.15** | **×1.10** | J14 |
 | **S4 ★** | J21–J27 | **3** | **/8h** | 3 | ❌ 0 | **×1.38** | **×1.38** | **×1.23** | **×1.15** | J21 |
@@ -1347,7 +1430,8 @@ Récompense la fidélité sur la durée. Deux queues indépendantes (daily + bon
 
 Si une journée est manquée, le streak repart à 0. Les buffs tombent immédiatement.
 
-> UI : widget full-width au-dessus des défis — streak en jours (grand), badge ×XP, N packs/jour, barre 7 cases fine, hint dynamique vers le palier suivant (ou "★ PALIER MAXIMUM ATTEINT").
+> UI : widget full-width au-dessus des défis — streak en jours (grand), badge ×XP (masqué si ×1.00), N packs/jour, barre 7 cases fine, hint dynamique vers le palier suivant (ou "★ PALIER MAXIMUM ATTEINT").
+> Hover sur chaque case → tooltip affichant le buff qu'on obtiendra ce jour-là, seulement si différent du tier actuel. Tooltip ancré à droite pour les cases 6–7, à gauche pour 1–2, centré pour 3–5.
 
 ---
 
@@ -1532,6 +1616,9 @@ Stage tout (`git add -A`), commit, push en une commande depuis n'importe quel te
 - [x] Daily challenges — 5 quests/jour, pool 11 variantes, seed daily, localStorage, hooks pack/rarity/nation, reset minuit
 - [x] XP system frontend — `lib/xp.ts` + `lib/challenges.ts`, courbe 41 niveaux recalibrée ×4 (Silver III = fin sem 1 casual)
 - [x] Système de streak — widget full-width (jours, ×XP mult, barre 7 cases, hint palier suivant), logique localStorage complète
+- [ ] Level-up detection dans `addXP()` — comparer ancien/nouveau niveau, dispatcher `csv-level-up` CustomEvent
+- [ ] Attribution récompenses level-up — pack ou gems selon `nextLevelReward(level)`, persiste en localStorage (queue pack à claim)
+- [ ] Modal/notification level-up — célébration visuelle + affichage de la récompense reçue
 - [ ] Trade want/have market
 - [ ] Intégration ads
 
