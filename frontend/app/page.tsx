@@ -4,9 +4,16 @@ import { C, F, rarityChrome } from "./lib/tokens";
 import type { RarityTier } from "./lib/tokens";
 import TopBar from "./components/TopBar";
 import XPBar from "./components/XPBar";
+import Flag from "./components/Flag";
 import PackOpenModal, { type RevealCard } from "./components/PackOpenModal";
-import { addOwnedIds } from "./lib/owned";
+import { addOwnedIds, getOwnedCounts } from "./lib/owned";
 import { addXP, calcPackXP, PACK_MULTIPLIER } from "./lib/xp";
+import {
+  getChallengesWithState,
+  onPackOpened,
+  onCardsObtained,
+  type ChallengeWithState,
+} from "./lib/challenges";
 
 type PackType = "daily" | "bonus";
 
@@ -63,13 +70,6 @@ function formatMs(ms: number): string {
   return `${sec}s`;
 }
 
-const CHALLENGES = [
-  { label: "Ouvrir 1 pack aujourd'hui", xp: "+10 XP", done: true, pct: 100 },
-  { label: "1 carte Gold ou+", xp: "+20 XP", done: false, pct: 0 },
-  { label: "Compléter 1 trade", xp: "+15 XP", done: false, pct: 0 },
-];
-
-
 export default function PackPage() {
   const [now, setNow] = useState(() => Date.now());
   const [queue, setQueue] = useState<QueuedPack[]>(() => [
@@ -80,10 +80,20 @@ export default function PackPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [activePack, setActivePack] = useState<QueuedPack | null>(null);
   const [packCards, setPackCards] = useState<RevealCard[]>([]);
+  const [challenges, setChallenges] = useState<ChallengeWithState[]>(() =>
+    typeof window !== "undefined" ? getChallengesWithState() : []
+  );
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const refresh = () => setChallenges(getChallengesWithState());
+    refresh();
+    window.addEventListener("csv-challenges-updated", refresh);
+    return () => window.removeEventListener("csv-challenges-updated", refresh);
   }, []);
 
   function skipWithAd(id: string) {
@@ -99,22 +109,30 @@ export default function PackPage() {
     if (!pack) return;
     setActivePack(pack);
 
+    // Snapshot counts BEFORE adding new cards so banners reflect pre-pack state
+    const existingCounts = getOwnedCounts();
+
     let cards: RevealCard[] = [];
     try {
       const res = await fetch("/api/pack-open");
       if (res.ok) {
         const data = await res.json();
-        cards = data.map((c: { player_id: string; name: string; overall: number; tier: string; role: string; teamShort: string; nationality: string; image_offset?: string; category_scores?: { firepower: number; opening: number; clutching: number; entrying: number; trading: number; impact: number } }) => ({
-          player_id: c.player_id,
-          name: c.name,
-          ovr: c.overall,
-          tier: c.tier,
-          role: c.role,
-          teamShort: c.teamShort,
-          nationality: c.nationality,
-          image_offset: c.image_offset,
-          categoryScores: c.category_scores,
-        }));
+        cards = data.map((c: { player_id: string; name: string; overall: number; tier: string; role: string; teamShort: string; nationality: string; image_offset?: string; category_scores?: { firepower: number; opening: number; clutching: number; entrying: number; trading: number; impact: number } }) => {
+          const stock = c.player_id ? (existingCounts[c.player_id] ?? 0) : 0;
+          return {
+            player_id: c.player_id,
+            name: c.name,
+            ovr: c.overall,
+            tier: c.tier,
+            role: c.role,
+            teamShort: c.teamShort,
+            nationality: c.nationality,
+            image_offset: c.image_offset,
+            categoryScores: c.category_scores,
+            isNew: stock === 0,
+            stockCount: stock,
+          };
+        });
       }
     } catch {
       // fallback to a simple placeholder if API fails
@@ -166,6 +184,12 @@ export default function PackPage() {
           const mult = PACK_MULTIPLIER[activePack?.type ?? "daily"];
           const earned = calcPackXP(revealed.map((c) => c.tier), mult);
           if (earned > 0) addXP(earned);
+          // Daily challenges
+          onPackOpened();
+          onCardsObtained(
+            revealed.map((c) => c.tier),
+            revealed.map((c) => c.nationality).filter(Boolean) as string[]
+          );
         }}
       />
 
@@ -297,18 +321,32 @@ export default function PackPage() {
       {/* Défis + Streak */}
       <div style={{ padding: "14px 14px 0", display: "flex", gap: 8 }}>
         <div style={{ flex: 1, borderRadius: 12, padding: "10px 12px", background: C.panel, border: `1px solid ${C.border}` }}>
-          <div style={{ fontFamily: F.mono, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted }}>
-            DÉFIS · 1/3
-          </div>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 2 }}>
-            <span style={{ fontFamily: F.body, fontSize: 22, fontWeight: 700 }}>33%</span>
-          </div>
-          <div style={{ marginTop: 4 }}>
-            <XPBar pct={33} color="teal" height={5} />
-          </div>
-          <div style={{ fontFamily: F.mono, fontSize: 8.5, color: C.muted, marginTop: 8, letterSpacing: "0.1em" }}>
-            RESET 5H 12M
-          </div>
+          {(() => {
+            const doneCount = challenges.filter((c) => c.done).length;
+            const pct = challenges.length ? Math.round((doneCount / challenges.length) * 100) : 0;
+            const midnight = new Date(now); midnight.setHours(24, 0, 0, 0);
+            const resetMs = Math.max(0, midnight.getTime() - now);
+            const rh = Math.floor(resetMs / 3600000);
+            const rm = Math.floor((resetMs % 3600000) / 60000);
+            const rs = Math.floor((resetMs % 60000) / 1000);
+            const resetLabel = `RESET ${rh}H ${String(rm).padStart(2, "0")}M ${String(rs).padStart(2, "0")}S`;
+            return (
+              <>
+                <div style={{ fontFamily: F.mono, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted }}>
+                  DÉFIS · {doneCount}/{challenges.length}
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginTop: 2 }}>
+                  <span style={{ fontFamily: F.body, fontSize: 22, fontWeight: 700 }}>{pct}%</span>
+                </div>
+                <div style={{ marginTop: 4 }}>
+                  <XPBar pct={pct} color="teal" height={5} />
+                </div>
+                <div style={{ fontFamily: F.mono, fontSize: 8.5, color: C.muted, marginTop: 8, letterSpacing: "0.1em" }}>
+                  {resetLabel}
+                </div>
+              </>
+            );
+          })()}
         </div>
 
         <div style={{ flex: 1, borderRadius: 12, padding: "10px 12px", background: C.panel, border: `1px solid ${C.border}` }}>
@@ -331,9 +369,9 @@ export default function PackPage() {
 
       {/* Liste challenges */}
       <div style={{ padding: "14px 14px 0" }}>
-        {CHALLENGES.map((c, i) => (
+        {challenges.map((c) => (
           <div
-            key={i}
+            key={c.id}
             style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", marginBottom: 6, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10 }}
           >
             <div
@@ -342,15 +380,23 @@ export default function PackPage() {
               {c.done ? "✓" : ""}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: c.done ? C.faint : "#fff", textDecoration: c.done ? "line-through" : "none" }}>
+              <div style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: c.done ? C.faint : "#fff", textDecoration: c.done ? "line-through" : "none", display: "flex", alignItems: "center", gap: 5 }}>
+                {c.kind === "obtain_nation" && c.nationIso && (
+                  <Flag code={c.nationIso} width={14} />
+                )}
                 {c.label}
               </div>
+              {c.target > 1 && !c.done && (
+                <div style={{ fontFamily: F.mono, fontSize: 8, color: C.muted, letterSpacing: "0.1em", marginBottom: 2 }}>
+                  {c.progress}/{c.target}
+                </div>
+              )}
               <div style={{ marginTop: 3 }}>
                 <XPBar pct={c.pct} color={c.done ? "teal" : "gold"} height={4} />
               </div>
             </div>
             <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: "0.06em", flexShrink: 0 }}>
-              {c.xp}
+              +{c.xp} XP
             </div>
           </div>
         ))}

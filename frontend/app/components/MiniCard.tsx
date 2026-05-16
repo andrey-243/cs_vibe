@@ -6,6 +6,7 @@ export interface CardData {
   name?: string;
   overall?: number;
   role?: string;
+  team?: string;
   teamShort?: string;
   imageUrl?: string | null;
   noPhoto?: boolean;
@@ -30,6 +31,7 @@ export default function MiniCard({
   isNew = false,
   dim = false,
   locked = false,
+  count,
   w = 84 as number | string,
   h = 148 as number | string,
   onClick,
@@ -39,6 +41,8 @@ export default function MiniCard({
   isNew?: boolean;
   dim?: boolean;
   locked?: boolean;
+  /** Number of copies owned — shows ×N badge when > 1 */
+  count?: number;
   w?: number | string;
   h?: number | string;
   onClick?: () => void;
@@ -47,6 +51,9 @@ export default function MiniCard({
   const showPhoto = p?.imageUrl && !p?.noPhoto;
   const hasStats = !!p?.categoryScores;
   const interactive = !!onClick;
+  const numW = typeof w === "number" ? w : 84;
+  const triSize = count !== undefined && count > 1 ? 28 : 0;
+  const triFontSize = 7;
 
   return (
     <div
@@ -177,7 +184,7 @@ export default function MiniCard({
 
         {/* TR — flag */}
         {p?.nationality && (
-          <div style={{ position: "absolute", top: 7, right: 7, zIndex: 2 }}>
+          <div style={{ position: "absolute", top: 4, right: 6, zIndex: 2 }}>
             <Flag code={p.nationality} width={14} />
           </div>
         )}
@@ -187,7 +194,7 @@ export default function MiniCard({
           style={{
             position: "absolute",
             left: 8,
-            right: 8,
+            right: triSize > 0 ? triSize + 2 : 8,
             bottom: 7,
           }}
         >
@@ -208,15 +215,19 @@ export default function MiniCard({
           </div>
           <div
             style={{
-              fontFamily: F.mono,
-              fontSize: 6.5,
-              letterSpacing: "0.12em",
-              opacity: 0.8,
               marginTop: 2,
+              fontFamily: F.mono,
+              fontSize: 8,
+              fontWeight: 700,
+              letterSpacing: "0.06em",
+              opacity: 0.9,
               textShadow: "0 1px 2px rgba(0,0,0,0.7)",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
             }}
           >
-            {p?.teamShort ?? "SPI"}
+            {p?.team ?? p?.teamShort ?? "SPI"}
           </div>
 
           {/* stats panel */}
@@ -299,7 +310,41 @@ export default function MiniCard({
             NEW
           </div>
         )}
+
       </div>
+
+      {/* Count corner triangle — outside overflow:hidden so border-radius doesn't clip it */}
+      {triSize > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: triSize,
+            height: triSize,
+            background: `linear-gradient(135deg, transparent 50%, ${chrome.from} 50%)`,
+            zIndex: 8,
+            display: "flex",
+            alignItems: "flex-end",
+            justifyContent: "flex-end",
+            pointerEvents: "none",
+          }}
+        >
+          <span
+            style={{
+              fontFamily: F.body,
+              fontSize: triFontSize,
+              fontWeight: 900,
+              color: "#fff",
+              padding: "0 3px 2px 0",
+              letterSpacing: "-0.01em",
+              textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+            }}
+          >
+            ×{count}
+          </span>
+        </div>
+      )}
     </div>
   );
 }

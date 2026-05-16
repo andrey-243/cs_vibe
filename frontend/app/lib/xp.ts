@@ -30,51 +30,50 @@ export type LevelDef = {
 };
 
 export const LEVELS: LevelDef[] = [
-  // CS2 ranks (1-18)
-  // Silver I–III atteignables en ~1 semaine casual (~305 XP)
-  { level: 1,  name: "Silver I",               phase: "cs2",    xpStart: 0     }, // j1
-  { level: 2,  name: "Silver II",              phase: "cs2",    xpStart: 60    }, // j1-2
-  { level: 3,  name: "Silver III",             phase: "cs2",    xpStart: 150   }, // j3-4
-  { level: 4,  name: "Silver IV",              phase: "cs2",    xpStart: 280   }, // j6 (fin sem 1)
-  { level: 5,  name: "Silver Elite",           phase: "cs2",    xpStart: 450   }, // sem 2
-  { level: 6,  name: "Silver Elite Master",    phase: "cs2",    xpStart: 660   },
-  { level: 7,  name: "Gold Nova I",            phase: "cs2",    xpStart: 920   },
-  { level: 8,  name: "Gold Nova II",           phase: "cs2",    xpStart: 1230  },
-  { level: 9,  name: "Gold Nova III",          phase: "cs2",    xpStart: 1600  },
-  { level: 10, name: "Gold Nova Master",       phase: "cs2",    xpStart: 2030  },
-  { level: 11, name: "Master Guardian I",      phase: "cs2",    xpStart: 2520  },
-  { level: 12, name: "Master Guardian II",     phase: "cs2",    xpStart: 3060  },
-  { level: 13, name: "Master Guardian Elite",  phase: "cs2",    xpStart: 3640  },
-  { level: 14, name: "Distinguished MG",       phase: "cs2",    xpStart: 4180  },
-  { level: 15, name: "Legendary Eagle",        phase: "cs2",    xpStart: 4550  },
-  { level: 16, name: "Legendary Eagle Master", phase: "cs2",    xpStart: 4780  },
-  { level: 17, name: "Supreme MFC",            phase: "cs2",    xpStart: 4910  },
-  { level: 18, name: "Global Elite",           phase: "cs2",    xpStart: 5000  },
+  // CS2 ranks (1-18) — Silver III atteignable fin semaine 1 casual (~623 XP)
+  { level: 1,  name: "Silver I",               phase: "cs2",    xpStart: 0      },
+  { level: 2,  name: "Silver II",              phase: "cs2",    xpStart: 240    },
+  { level: 3,  name: "Silver III",             phase: "cs2",    xpStart: 620    }, // fin sem 1 casual
+  { level: 4,  name: "Silver IV",              phase: "cs2",    xpStart: 1120   },
+  { level: 5,  name: "Silver Elite",           phase: "cs2",    xpStart: 1800   },
+  { level: 6,  name: "Silver Elite Master",    phase: "cs2",    xpStart: 2640   },
+  { level: 7,  name: "Gold Nova I",            phase: "cs2",    xpStart: 3680   },
+  { level: 8,  name: "Gold Nova II",           phase: "cs2",    xpStart: 4920   },
+  { level: 9,  name: "Gold Nova III",          phase: "cs2",    xpStart: 6400   },
+  { level: 10, name: "Gold Nova Master",       phase: "cs2",    xpStart: 8120   },
+  { level: 11, name: "Master Guardian I",      phase: "cs2",    xpStart: 10080  },
+  { level: 12, name: "Master Guardian II",     phase: "cs2",    xpStart: 12240  },
+  { level: 13, name: "Master Guardian Elite",  phase: "cs2",    xpStart: 14560  },
+  { level: 14, name: "Distinguished MG",       phase: "cs2",    xpStart: 16720  },
+  { level: 15, name: "Legendary Eagle",        phase: "cs2",    xpStart: 18200  },
+  { level: 16, name: "Legendary Eagle Master", phase: "cs2",    xpStart: 19120  },
+  { level: 17, name: "Supreme MFC",            phase: "cs2",    xpStart: 19640  },
+  { level: 18, name: "Global Elite",           phase: "cs2",    xpStart: 20000  },
   // Faceit (19-28)
-  { level: 19, name: "Faceit 1",               phase: "faceit", xpStart: 5500  },
-  { level: 20, name: "Faceit 2",               phase: "faceit", xpStart: 6100  },
-  { level: 21, name: "Faceit 3",               phase: "faceit", xpStart: 6800  },
-  { level: 22, name: "Faceit 4",               phase: "faceit", xpStart: 7600  },
-  { level: 23, name: "Faceit 5",               phase: "faceit", xpStart: 8500  },
-  { level: 24, name: "Faceit 6",               phase: "faceit", xpStart: 9500  },
-  { level: 25, name: "Faceit 7",               phase: "faceit", xpStart: 10600 },
-  { level: 26, name: "Faceit 8",               phase: "faceit", xpStart: 11800 },
-  { level: 27, name: "Faceit 9",               phase: "faceit", xpStart: 13100 },
-  { level: 28, name: "Faceit 10",              phase: "faceit", xpStart: 14500 },
+  { level: 19, name: "Faceit 1",               phase: "faceit", xpStart: 22000  },
+  { level: 20, name: "Faceit 2",               phase: "faceit", xpStart: 24400  },
+  { level: 21, name: "Faceit 3",               phase: "faceit", xpStart: 27200  },
+  { level: 22, name: "Faceit 4",               phase: "faceit", xpStart: 30400  },
+  { level: 23, name: "Faceit 5",               phase: "faceit", xpStart: 34000  },
+  { level: 24, name: "Faceit 6",               phase: "faceit", xpStart: 38000  },
+  { level: 25, name: "Faceit 7",               phase: "faceit", xpStart: 42400  },
+  { level: 26, name: "Faceit 8",               phase: "faceit", xpStart: 47200  },
+  { level: 27, name: "Faceit 9",               phase: "faceit", xpStart: 52400  },
+  { level: 28, name: "Faceit 10",              phase: "faceit", xpStart: 58000  },
   // ESEA (29-41)
-  { level: 29, name: "ESEA D-",                phase: "esea",   xpStart: 15100 },
-  { level: 30, name: "ESEA D",                 phase: "esea",   xpStart: 15750 },
-  { level: 31, name: "ESEA D+",                phase: "esea",   xpStart: 16450 },
-  { level: 32, name: "ESEA C-",                phase: "esea",   xpStart: 17000 },
-  { level: 33, name: "ESEA C",                 phase: "esea",   xpStart: 17500 },
-  { level: 34, name: "ESEA C+",                phase: "esea",   xpStart: 17950 },
-  { level: 35, name: "ESEA B-",                phase: "esea",   xpStart: 18350 },
-  { level: 36, name: "ESEA B",                 phase: "esea",   xpStart: 18700 },
-  { level: 37, name: "ESEA B+",                phase: "esea",   xpStart: 19000 },
-  { level: 38, name: "ESEA A-",                phase: "esea",   xpStart: 19250 },
-  { level: 39, name: "ESEA A",                 phase: "esea",   xpStart: 19500 },
-  { level: 40, name: "ESEA A+",                phase: "esea",   xpStart: 19750 },
-  { level: 41, name: "ESEA S",                 phase: "esea",   xpStart: 20000 },
+  { level: 29, name: "ESEA D-",                phase: "esea",   xpStart: 60400  },
+  { level: 30, name: "ESEA D",                 phase: "esea",   xpStart: 63000  },
+  { level: 31, name: "ESEA D+",                phase: "esea",   xpStart: 65800  },
+  { level: 32, name: "ESEA C-",                phase: "esea",   xpStart: 68000  },
+  { level: 33, name: "ESEA C",                 phase: "esea",   xpStart: 70000  },
+  { level: 34, name: "ESEA C+",                phase: "esea",   xpStart: 71800  },
+  { level: 35, name: "ESEA B-",                phase: "esea",   xpStart: 73400  },
+  { level: 36, name: "ESEA B",                 phase: "esea",   xpStart: 74800  },
+  { level: 37, name: "ESEA B+",                phase: "esea",   xpStart: 76000  },
+  { level: 38, name: "ESEA A-",                phase: "esea",   xpStart: 77000  },
+  { level: 39, name: "ESEA A",                 phase: "esea",   xpStart: 78000  },
+  { level: 40, name: "ESEA A+",                phase: "esea",   xpStart: 79000  },
+  { level: 41, name: "ESEA S",                 phase: "esea",   xpStart: 80000  },
 ];
 
 const LS_KEY = "csv-xp-total";
