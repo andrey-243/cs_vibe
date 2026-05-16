@@ -20,6 +20,10 @@ export interface RevealCard {
     trading: number;
     impact: number;
   };
+  /** true = first copy ever obtained (set at pack-open time, before addOwnedIds) */
+  isNew?: boolean;
+  /** copies owned before this pack opened */
+  stockCount?: number;
 }
 
 export interface OpenPackOpts {
@@ -38,7 +42,44 @@ export interface SpinWheelOpts {
   onComplete?: (card: RevealCard) => void;
 }
 
-// ─── Audio (synth ticks via Web Audio API · no files) ───────────────────────
+// ─── Audio ──────────────────────────────────────────────────────────────────
+
+// Two alternating tick samples: A = low (heavy click), B = high (bright click)
+let _tickBufA: AudioBuffer | null = null;
+let _tickBufB: AudioBuffer | null = null;
+let _packAppearBuf: AudioBuffer | null = null;
+let _cardAppearBuf: AudioBuffer | null = null;
+let _tickLoadPromise: Promise<void> | null = null;
+let _tickToggle = false;
+
+function preloadTickBuffer(): Promise<void> {
+  // Reset if previous attempt loaded nothing (getAudio was null — no user gesture yet)
+  if (_tickLoadPromise && !_tickBufA && !_packAppearBuf && !_cardAppearBuf) {
+    _tickLoadPromise = null;
+  }
+  if (_tickLoadPromise) return _tickLoadPromise;
+  _tickLoadPromise = (async () => {
+    try {
+      const ctx = getAudio();
+      if (!ctx) return;
+      const [respA, respB, respPack, respCard] = await Promise.all([
+        fetch("/sounds/csgo-tick-a.wav"),
+        fetch("/sounds/csgo-tick-b.wav"),
+        fetch("/sounds/pack-appear.wav"),
+        fetch("/sounds/card-appear.wav"),
+      ]);
+      if (respA.ok) _tickBufA = await ctx.decodeAudioData(await respA.arrayBuffer());
+      if (respB.ok) _tickBufB = await ctx.decodeAudioData(await respB.arrayBuffer());
+      if (respPack.ok) _packAppearBuf = await ctx.decodeAudioData(await respPack.arrayBuffer());
+      if (respCard.ok) _cardAppearBuf = await ctx.decodeAudioData(await respCard.arrayBuffer());
+    } catch {
+      // silent fail → synthesis fallback
+    }
+  })();
+  return _tickLoadPromise;
+}
+
+export { preloadTickBuffer };
 
 let _audioCtx: AudioContext | null = null;
 let _soundEnabled = true;
@@ -65,13 +106,43 @@ interface TickOpts {
   vol?: number;
 }
 
-// CS:GO tick: everything under 10ms — longer = sounds like a material, not a mechanism
+// scheduleTick: sample-based (WAV) with synthesis fallback
 function scheduleTick(when: number, opts?: TickOpts) {
   const ctx = getAudio();
   if (!ctx) return;
-  const { freq = 1800, dur = 0.008, vol = 1.4 } = opts ?? {};
+  const { freq = 1800, vol = 1.2 } = opts ?? {};
   const t = ctx.currentTime + when;
 
+  if (_tickBufA || _tickBufB) {
+    // ── Double-click ratchet: A = main impact, B = resonance 12ms later ──
+    const t0 = (freq - 1700) / 700; // 0 at slow, 1 at fast
+    const playBuf = (buf: AudioBuffer, when: number, rate: number, gain: number) => {
+      const src = ctx!.createBufferSource();
+      src.buffer = buf;
+      src.playbackRate.value = Math.max(0.5, Math.min(5.0, rate));
+      const g = ctx!.createGain();
+      g.gain.setValueAtTime(gain, when);
+      src.connect(g).connect(ctx!.destination);
+      src.start(when);
+    };
+    // A only — pitch rises slightly over 20ms (metal resonance chirp)
+    if (_tickBufA) {
+      const src = ctx.createBufferSource();
+      src.buffer = _tickBufA;
+      const rateStart = 1.5 + t0 * 0.5;   // 1.5 fast → 2.0 slow/landing
+      const rateEnd   = rateStart * 1.15; // +15% pitch chirp per tick
+      src.playbackRate.setValueAtTime(rateStart, t);
+      src.playbackRate.linearRampToValueAtTime(rateEnd, t + 0.022);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(vol, t);
+      src.connect(g).connect(ctx.destination);
+      src.start(t);
+    }
+    return;
+  }
+
+  // ── Synthesis fallback (if WAV not loaded) ────────────────────────────────
+  const dur = 0.008;
   function noiseBuf(ms: number, decay: number) {
     const len = Math.ceil(ms * 0.001 * ctx!.sampleRate);
     const buf = ctx!.createBuffer(1, len, ctx!.sampleRate);
@@ -80,39 +151,20 @@ function scheduleTick(when: number, opts?: TickOpts) {
       d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (d.length * decay));
     return buf;
   }
-
-  // ── Impact transient: 3ms noise, HP @ 1500Hz — no exhaust rumble ─────────────
-  const impSrc = ctx.createBufferSource();
-  impSrc.buffer = noiseBuf(3, 0.10);
-  const impHP = ctx.createBiquadFilter();
-  impHP.type = "highpass";
-  impHP.frequency.value = 1500; // was 400Hz — that was the exhaust sound
-  const impG = ctx.createGain();
-  impG.gain.setValueAtTime(vol * 0.55, t);
-  impG.gain.exponentialRampToValueAtTime(0.0001, t + 0.003);
-  impSrc.connect(impHP).connect(impG).connect(ctx.destination);
-  impSrc.start(t);
-
-  // ── Metallic ring: sine at freq, 8ms ─────────────────────────────────────────
   const osc = ctx.createOscillator();
   osc.type = "sine";
   osc.frequency.value = freq;
   const oscG = ctx.createGain();
-  oscG.gain.setValueAtTime(vol * 0.45, t);
+  oscG.gain.setValueAtTime(vol * 0.6, t);
   oscG.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   osc.connect(oscG).connect(ctx.destination);
-  osc.start(t);
-  osc.stop(t + dur + 0.001);
-
-  // ── Bright tic: 4kHz boosted — the metallic "tic" is HERE ────────────────────
+  osc.start(t); osc.stop(t + dur + 0.001);
   const clkSrc = ctx.createBufferSource();
   clkSrc.buffer = noiseBuf(4, 0.08);
   const clkBP = ctx.createBiquadFilter();
-  clkBP.type = "bandpass";
-  clkBP.frequency.value = 4000;
-  clkBP.Q.value = 3.5;
+  clkBP.type = "bandpass"; clkBP.frequency.value = 4000; clkBP.Q.value = 3.5;
   const clkG = ctx.createGain();
-  clkG.gain.setValueAtTime(vol * 0.85, t); // dominant now
+  clkG.gain.setValueAtTime(vol * 0.8, t);
   clkG.gain.exponentialRampToValueAtTime(0.0001, t + 0.005);
   clkSrc.connect(clkBP).connect(clkG).connect(ctx.destination);
   clkSrc.start(t);
@@ -187,7 +239,37 @@ function _shimmer({ when, duration = 0.4, volume = 0.12 }: { when: number; durat
 }
 
 export function playLanding(tier: string, when = 0) {
-  if (!getAudio()) return;
+  const ctx = getAudio();
+  if (!ctx) return;
+
+  if (_cardAppearBuf) {
+    // WAV-based — per-rarity: offset into WAV + rate + vol
+    // WAV structure: small click at ~420ms, main impact at ~1550ms, long tail
+    const profiles: Record<string, { offset: number; rate: number; vol: number; shimmer?: boolean }> = {
+      BRONZE:  { offset: 0.38, rate: 0.75, vol: 0.50 },              // small click, dark/dull
+      SILVER:  { offset: 0.38, rate: 0.90, vol: 0.65 },              // small click, brighter
+      GOLD:    { offset: 1.50, rate: 1.00, vol: 0.80, shimmer: true },// full impact
+      DIAMOND: { offset: 1.45, rate: 1.10, vol: 1.00, shimmer: true },// more buildup + brighter
+      ICON:    { offset: 1.35, rate: 1.25, vol: 1.15, shimmer: true },// max buildup + highest pitch
+    };
+    const p = profiles[tier] ?? profiles.BRONZE;
+    const t = ctx.currentTime + when;
+    const src = ctx.createBufferSource();
+    src.buffer = _cardAppearBuf;
+    src.playbackRate.value = p.rate;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(p.vol, t);
+    src.connect(g).connect(ctx.destination);
+    src.start(t, p.offset);
+    // keep shimmer layer on top for premium rarities
+    if (p.shimmer) {
+      const shimmerDur = tier === "ICON" ? 0.85 : 0.5;
+      _shimmer({ when: when + 0.05, duration: shimmerDur, volume: tier === "ICON" ? 0.16 : 0.08 });
+    }
+    return;
+  }
+
+  // ── Synthesis fallback ────────────────────────────────────────────────────
   const profiles: Record<string, () => void> = {
     BRONZE() {
       _tone({ when, type: "sine", freqStart: 150, freqEnd: 45, duration: 0.28, volume: 0.28 });
@@ -223,8 +305,7 @@ export function playLanding(tier: string, when = 0) {
       _shimmer({ when: when + 0.05, duration: 0.85, volume: 0.16 });
     },
   };
-  const profile = profiles[tier] ?? profiles.BRONZE;
-  profile();
+  (profiles[tier] ?? profiles.BRONZE)();
 }
 
 function schedulePackTear(when: number, vol = 0.25) {
@@ -341,11 +422,23 @@ export function openPack(opts: OpenPackOpts): Promise<void> {
   return new Promise((resolve) => {
     const audio = getAudio();
     if (audio) {
-      scheduleTick(0,    { freq: 1200, vol: 0.1 });
-      scheduleTick(0.15, { freq: 1200, vol: 0.1 });
-      scheduleTick(0.30, { freq: 1200, vol: 0.1 });
-      schedulePackTear(0.40, 0.3);
-      scheduleThud(0.60, 0.3);
+      preloadTickBuffer(); // kick off WAV load during pack animation (2.4s to finish)
+      if (_packAppearBuf) {
+        const src = audio.createBufferSource();
+        src.buffer = _packAppearBuf;
+        const g = audio.createGain();
+        g.gain.setValueAtTime(1.0, audio.currentTime);
+        src.connect(g).connect(audio.destination);
+        // skip 300ms of silence — aligns WAV peak (~750ms) with visual tear (400ms)
+        src.start(audio.currentTime, 0.30);
+      } else {
+        // synthesis fallback if WAV not yet loaded
+        scheduleTick(0,    { freq: 1200, vol: 0.1 });
+        scheduleTick(0.15, { freq: 1200, vol: 0.1 });
+        scheduleTick(0.30, { freq: 1200, vol: 0.1 });
+        schedulePackTear(0.40, 0.3);
+        scheduleThud(0.60, 0.3);
+      }
     }
 
     pack.classList.add("csv-pack--shaking");
@@ -440,18 +533,17 @@ export function spinWheel(opts: SpinWheelOpts): Promise<RevealCard> {
         const filtered: number[] = [];
         let last = -Infinity;
         tickTimes.forEach((t) => {
-          if (t - last >= 18) { filtered.push(t); last = t; }
+          if (t - last >= 22) { filtered.push(t); last = t; }
         });
         filtered.forEach((tMs, idx) => {
           const remaining = filtered.length - idx;
-          const drama = Math.max(0, 6 - remaining) / 6;
-          // metallic ring: 2400Hz fast → 1700Hz slow
-          const freq = 2400 - drama * 700;
-          // quiet at start, punchy as it slows
-          const vol = 0.5 + drama * 0.9;
+          const drama = Math.max(0, 8 - remaining) / 8;
+          const freq = 1700 + drama * 400;  // subtle pitch rise toward landing
+          const volBase = 0.14 + drama * 0.18;  // global réduit → 0.32 max
+          const vol = remaining === 1 ? volBase * 0.65 : volBase;  // dernier tick -35%
           scheduleTick(tMs / 1000, { freq, vol });
         });
-        playLanding(target.tier ?? "BRONZE", duration / 1000 + 0.02);
+        playLanding(target.tier ?? "BRONZE", duration / 1000 + 0.35);
       }
 
       requestAnimationFrame(() => {

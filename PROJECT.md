@@ -295,6 +295,14 @@ Reprise automatique si interrompue grâce à `players_progress.json`
 - Fonts : Manrope (display/body) + Space Mono (mono) via Google Fonts
 - Build propre, zéro erreur TypeScript
 
+### Daily Challenges + Streak (tab Pack)
+- `app/lib/challenges.ts` — pool 11 variantes, 5 quests/jour (1 par kind group), seed déterministe par date, localStorage + reset minuit auto, hooks `onPackOpened` / `onCardsObtained` / `onTradeCompleted` / `onCardsDecrafted`
+- Nation du jour : ISO2 tiré aléatoirement chaque jour, même nation pour tous les joueurs, affiché avec `<Flag>` inline
+- Widget DÉFIS : count réel X/5, % progression, countdown jusqu'à minuit avec secondes (live)
+- Widget STREAK : UI 7 cases existante (non fonctionnelle — logique à brancher en V2 avec auth)
+- XP accordé automatiquement à la complétion via `addXP()`
+- 540 combinaisons uniques de quests (~1.5 ans sans répétition exacte)
+
 ### Pack opening — animation complète
 Séquence en 3 phases déclenchée par "Ouvrir →" sur un pack prêt.
 
@@ -361,19 +369,113 @@ Séquence en 3 phases déclenchée par "Ouvrir →" sur un pack prêt.
 | 3 layers : transient broadband 400Hz–8kHz + sine 1500–2000Hz + 4kHz click, tout < 10ms | "pot d'échappement" |
 | Même mais HP monté à 1500Hz (coupe le bas) + 4kHz boosté à 85% | "toujours pas assez aigu/métallique" |
 
-**État actuel (`reveal.ts` · `scheduleTick`) :**
-- 3 composants : transient 3ms (HP 1500Hz) + sine 8ms (2400→1700Hz selon drama) + bandpass 4kHz 4ms
-- Volume : rampe de 0.5 à 1.4 au fil du ralentissement (quasi silencieux au start = agréable)
-- Gap minimum entre ticks : 18ms
-- Le rythme est reconnaissable ✅ — le timbre reste trop peu métallique ❌
+**Config active — `reveal.ts` · `scheduleTick` :**
 
-**Piste non explorée — à implémenter :**
-Lecture directe du WAV via `AudioBufferSourceNode.start(when, offset, duration)` :
-- Pre-load `fetch('/sounds/csgo-tick.wav')` → `decodeAudioData` au premier pack ouvert
-- Jouer offset précis dans le buffer pour chaque tick (~1360ms dans le WAV original, impact 8 — 96ms de silence avant)
-- `playbackRate` variable pour le drama effect (fast ticks = rate 1.0, slow = rate 0.85)
-- Garantit un son identique au WAV, zero approximation de synthèse
-- Fichier extrait déjà présent : `frontend/public/sounds/csgo-tick.wav` (47ms, 8KB)
+Un seul sample A, pitch rise par tick (chirp métallique), volume monte + pitch monte vers le landing.
+
+```
+csgo-tick-a.wav  — tick phase rapide (30ms, centroid 1449Hz, normalisé à 70%)
+  Extraction : t=441ms–471ms dans CSGO Case Opening Sound Effect.wav
+  (31ms de silence avant, 34ms après — tick le mieux isolé dans la phase rapide)
+
+csgo-tick-b.wav  — inutilisé en config active (conservé pour backup)
+  Extraction : t=1355ms–1393ms (centroid 847Hz)
+
+scheduleTick :
+  rateStart = 1.5 + t0 * 0.5   → rate 1.5 (fast/drama=0) → 2.0 (slow/drama=1)
+  rateEnd   = rateStart * 1.15  → +15% pitch chirp sur 22ms par tick
+  t0 = (freq - 1700) / 700
+
+spinWheel :
+  drama = Max(0, 8 - remaining) / 8    ← commence 8 ticks avant le landing
+  freq  = 1700 + drama * 400            ← pitch rise léger vers la fin
+  vol   = 0.14 + drama * 0.18          ← quasi-silencieux au début → 0.32 au landing
+  dernier tick (remaining=1) : vol × 0.65
+  gap minimum entre ticks : 22ms
+```
+
+---
+
+**Backup — config "double-clic ratchet" (satisfaisant, moins aigu) :**
+
+Chaque tick joue A + B simultanément (B avec 12ms de délai), style roue mécanique.
+Pour revenir à cette config, modifier `scheduleTick` et `spinWheel` :
+
+```
+Samples :
+  A → t=1355ms–1393ms, centroid 847Hz  (choc principal, grave)
+  B → t=1241ms–1272ms, centroid 1235Hz (résonance, plus aigu)
+
+scheduleTick (bloc sample) :
+  if (_tickBufA) playBuf(_tickBufA, t, 3.0 + t0 * 1.0, vol)
+  if (_tickBufB) playBuf(_tickBufB, t + 0.012, 1.6 + t0 * 0.6, vol * 0.55)
+
+spinWheel :
+  drama = Max(0, 8 - remaining) / 8
+  freq  = 1700 + drama * 400
+  vol   = 0.14 + drama * 0.18  (même courbe)
+  gap minimum : 22ms
+```
+
+Ce qui n'a pas marché : alternance stricte A/B (pattern audible au ralenti) · sélection random (sonne faux) · rate ×4.5+ sur tick lent (étouffé/cartonneux).
+
+---
+
+### Son d'ouverture du pack (mai 2026)
+
+**Source :** `from_claude_design/cs-go-case-pack_appear.wav` (3.0s, stéréo 44100Hz)  
+**Copié dans :** `frontend/public/sounds/pack-appear.wav`
+
+```
+Timing WAV :
+  0–300ms   : silence (skippé via offset)
+  300–750ms : montée progressive
+  750–900ms : pic principal (rms ~1500)
+  900ms+    : décroissance
+
+Alignement sur l'animation openPack (2.4s total) :
+  src.start(audio.currentTime, 0.30)  ← skip les 300ms de silence
+  → pic WAV (750ms) arrive à ~450ms dans l'animation
+  → coïncide avec la déchirure visuelle (css-pack--opening à 400ms)
+
+Preload : déclenché au mount de PackOpenModal (useEffect vide)
+  → preloadTickBuffer() charge les 4 WAVs en parallèle :
+     csgo-tick-a.wav + csgo-tick-b.wav + pack-appear.wav + card-appear.wav
+  → Bug fix : si getAudio() retourne null au mount (pas de geste utilisateur),
+    _tickLoadPromise est reset → retry automatique au prochain appel (clic ouverture)
+  → fallback synthesis si non chargé (ticks) / silence (pack appear)
+```
+
+Fallback openPack (si _packAppearBuf null) : 3 scheduleTick + schedulePackTear + scheduleThud (synthèse).
+
+---
+
+### Son de reveal carte (mai 2026)
+
+**Source :** `from_claude_design/cs-go-case-card_appear.wav` (3.0s, stéréo 44100Hz)  
+**Copié dans :** `frontend/public/sounds/card-appear.wav`
+
+```
+Timing WAV :
+  0–400ms    : silence
+  400–700ms  : petit click (rms ~188) — utilisé pour Bronze/Silver
+  700ms–1.4s : silence
+  1550–1700ms: pic principal (rms ~1696) — utilisé pour Gold/Diamond/Icon
+  1700ms+    : longue décroissance
+
+Variants par rareté (playLanding) :
+  BRONZE  → offset 0.38s, rate ×0.75, vol 0.50               (petit click, sombre)
+  SILVER  → offset 0.38s, rate ×0.90, vol 0.65               (petit click, légèrement plus brillant)
+  GOLD    → offset 1.50s, rate ×1.00, vol 0.80 + shimmer
+  DIAMOND → offset 1.45s, rate ×1.10, vol 1.00 + shimmer     (plus de buildup)
+  ICON    → offset 1.35s, rate ×1.25, vol 1.15 + shimmer     (max buildup + pitch)
+
+Timing collision fix :
+  playLanding déclenché à duration/1000 + 0.35s (était +0.02s)
+  → 350ms de gap entre le dernier tick et le son de reveal
+```
+
+Fallback playLanding (si _cardAppearBuf null) : synthèse originale conservée par rareté.
 
 ### Collection — cartes possédées (localStorage)
 - `app/lib/owned.ts` — store client : `getOwnedIds()` / `addOwnedIds(ids[])` / `clearOwned()`
@@ -690,15 +792,27 @@ Mécanique Major       × 1.5
 **XP hors pack :**
 ```
 Connexion quotidienne          →   5 XP
-7 jours consécutifs            →   free pack (bonus)
 Trade complété                 →  15 XP  (indépendant de qui on trade)
 Craft pack gems — selon tier   →  TOP100: 20 / TOP75: 30 / TOP50: 45
                                    TOP25: 65 / TOP15: 85 / TOP5: 120
 ```
 
+**XP daily challenges (5/jour, reset minuit) :**
+```
+Ouvrir 1/2/3 packs            →  10 / 18 / 25 XP  (1 variante tirée au sort)
+Obtenir Silver+ / Gold+ / Diamond+  →  10 / 20 / 35 XP
+Compléter 1 trade             →  15 XP
+Décraft 1 / 3 / 5 cartes     →   5 / 10 / 18 XP
+Joueur nation du jour         →  15 XP  (nation ISO2 tirée aléatoirement chaque jour)
+─────────────────────────────────────────────────────
+Max 5/5 complétés             →  ~80 XP/jour
+Casual (~3/5)                 →  ~40 XP/jour
+Optimal (~4.5/5)              →  ~70 XP/jour
+```
+
 ### Courbe XP — seuils implémentés (41 niveaux)
 
-Calibration : Silver I–III atteignables en ~1 semaine casual (~305 XP/sem), puis ralentissement progressif.
+Calibration : Silver III atteignable fin semaine 1 casual (~623 XP). Tous les seuils ×4 vs V1 (recalibrés avec les daily challenges).
 
 **XP moyen par pack (distribution réelle) :**
 ```
@@ -707,63 +821,103 @@ Daily pack  (×1.0) → ~20 XP/pack
 Bonus pack  (×1.2) → ~24 XP/pack
 ```
 
-**Débit par profil (packs/semaine) :**
+**XP moyen par challenge (avg sur variantes) :**
 ```
-Casual  (1 session/jour) → 7 daily + 7 bonus  ≈  305 XP/semaine
-Optimal (dès que prêt)   → 14 daily + 28 bonus ≈  940 XP/semaine
+open_packs    : (10+18+25)/3          = 17.7 XP
+obtain_rarity : (10+20+35)/3          = 21.7 XP
+complete_trade:                          15   XP
+decraft       : (5+10+18)/3           = 11   XP
+obtain_nation :                          15   XP
+─────────────────────────────────────────────────
+Max 5/5 complétés                     = 80.4 XP/jour
 ```
+
+**Simulation par profil — avec challenges (5/jour) :**
+
+| Source | Casual | Optimal |
+|---|---|---|
+| Login | 5 XP | 5 XP |
+| Packs (2 vs 6/jour) | ~44 XP | ~136 XP |
+| Challenges (~3/5 vs ~4.5/5) | ~40 XP | ~70 XP |
+| **Total/jour** | **~89 XP** | **~211 XP** |
+
+*Détail challenges casual : open_packs 2/3 complétable (9 XP), rarity quasi always (18 XP), trade 2×/sem (4 XP), decraft 1×/sem (1 XP), nation ~50% match (8 XP)*
+*Détail challenges optimal : toutes quasi systématiques sauf trade (80%) et decraft (70%)*
+
+**Progression semaine 1 (7j) :**
+```
+Casual  →  ~623 XP  →  Silver Elite (lvl 5)
+Optimal →  ~1 477 XP  →  Gold Nova II (lvl 8)
+```
+
+**Progression mois 1 (30j) :**
+```
+Casual  →  ~2 670 XP  →  Master Guardian I (lvl 11)
+Optimal →  ~6 330 XP  →  Faceit 2 (lvl 20)
+```
+
+**Temps pour atteindre les caps :**
+```
+                    Casual     Optimal
+Global Elite (5k XP)   ~8 sem     ~3.5 sem
+Faceit 10 (14.5k XP)   ~23 sem    ~10 sem
+ESEA S (20k XP)        ~32 sem    ~14 sem
+```
+
+> Note : les challenges doublent environ la progression casual vs packs seuls (305 → 623 XP/sem).
+> Si la courbe XP doit être maintenue à l'ancienne vitesse, multiplier tous les xpStart par ~1.5.
 
 **Phase 1 — CS2 (niveaux 1–18) :**
 ```
-1  Silver I               →     0 XP   (J1)
-2  Silver II              →    60 XP   (J1-2 casual)
-3  Silver III             →   150 XP   (J3-4 casual)
-4  Silver IV              →   280 XP   (J6 casual — fin semaine 1)
-5  Silver Elite           →   450 XP
-6  Silver Elite Master    →   660 XP
-7  Gold Nova I            →   920 XP
-8  Gold Nova II           → 1 230 XP
-9  Gold Nova III          → 1 600 XP
-10 Gold Nova Master       → 2 030 XP
-11 Master Guardian I      → 2 520 XP
-12 Master Guardian II     → 3 060 XP
-13 Master Guardian Elite  → 3 640 XP
-14 Distinguished MG       → 4 180 XP
-15 Legendary Eagle        → 4 550 XP
-16 Legendary Eagle Master → 4 780 XP
-17 Supreme MFC            → 4 910 XP
-18 Global Elite           → 5 000 XP   (~16 sem casual / ~5 sem optimal)
+1  Silver I               →      0 XP
+2  Silver II              →    240 XP
+3  Silver III             →    620 XP   ← fin semaine 1 casual
+4  Silver IV              →  1 120 XP
+5  Silver Elite           →  1 800 XP
+6  Silver Elite Master    →  2 640 XP
+7  Gold Nova I            →  3 680 XP
+8  Gold Nova II           →  4 920 XP
+9  Gold Nova III          →  6 400 XP
+10 Gold Nova Master       →  8 120 XP
+11 Master Guardian I      → 10 080 XP
+12 Master Guardian II     → 12 240 XP
+13 Master Guardian Elite  → 14 560 XP
+14 Distinguished MG       → 16 720 XP
+15 Legendary Eagle        → 18 200 XP
+16 Legendary Eagle Master → 19 120 XP
+17 Supreme MFC            → 19 640 XP
+18 Global Elite           → 20 000 XP   (~32 sem casual / ~14 sem optimal)
 ```
 
 **Phase 2 — Faceit (niveaux 19–28) :**
 ```
-19 Faceit 1  →  5 500 XP
-20 Faceit 2  →  6 100 XP
-21 Faceit 3  →  6 800 XP
-22 Faceit 4  →  7 600 XP
-23 Faceit 5  →  8 500 XP
-24 Faceit 6  →  9 500 XP
-25 Faceit 7  → 10 600 XP
-26 Faceit 8  → 11 800 XP
-27 Faceit 9  → 13 100 XP
-28 Faceit 10 → 14 500 XP
+19 Faceit 1  → 22 000 XP
+20 Faceit 2  → 24 400 XP
+21 Faceit 3  → 27 200 XP
+22 Faceit 4  → 30 400 XP
+23 Faceit 5  → 34 000 XP
+24 Faceit 6  → 38 000 XP
+25 Faceit 7  → 42 400 XP
+26 Faceit 8  → 47 200 XP
+27 Faceit 9  → 52 400 XP
+28 Faceit 10 → 58 000 XP   (~93 sem casual / ~39 sem optimal)
 ```
 
 **Phase 3 — ESEA (niveaux 29–41) :**
 ```
-29 ESEA D-  → 15 100 XP
-30 ESEA D   → 15 750 XP
-31 ESEA D+  → 16 450 XP
-32 ESEA C-  → 17 000 XP
-33 ESEA C   → 17 500 XP
-34 ESEA C+  → 17 950 XP
-35 ESEA B-  → 18 350 XP
-36 ESEA B   → 18 700 XP
-37 ESEA B+  → 19 000 XP
-38 ESEA A-  → 19 250 XP
-39 ESEA A   → 19 500 XP
-40 ESEA A+  → 19 750 XP
-41 ESEA S   → 20 000 XP   (~65 sem casual / ~21 sem optimal)
+29 ESEA D-  → 60 400 XP
+30 ESEA D   → 63 000 XP
+31 ESEA D+  → 65 800 XP
+32 ESEA C-  → 68 000 XP
+33 ESEA C   → 70 000 XP
+34 ESEA C+  → 71 800 XP
+35 ESEA B-  → 73 400 XP
+36 ESEA B   → 74 800 XP
+37 ESEA B+  → 76 000 XP
+38 ESEA A-  → 77 000 XP
+39 ESEA A   → 78 000 XP
+40 ESEA A+  → 79 000 XP
+41 ESEA S   → 80 000 XP   (~128 sem casual / ~54 sem optimal)
 ```
 
 ### Récompenses par palier
@@ -1045,18 +1199,63 @@ Les cartes Legacy et Major gardent leur `trade_cost` figé au moment du freeze.
 
 ## Daily Challenges
 
-3 challenges par jour, reset à minuit. Reroll d'un challenge via pub.
+5 challenges par jour, reset à minuit. Exactement 1 par groupe de kind — jamais 2 du même type. Reroll d'un challenge via pub.
 
-Exemples de challenges :
+Pool de challenges (tirage aléatoire parmi) :
 ```
-Ouvrir 1 pack aujourd'hui          → 10 XP
-Obtenir 1 carte Gold ou+            → 20 XP
-Compléter 1 trade                   → 15 XP
-Décraft 3 cartes                    → 10 XP
-Connexion 3 jours de suite          → 25 XP + gems bonus
-Obtenir un joueur d'une nation X    → 15 XP
+Ouvrir 1 pack aujourd'hui          →  10 XP
+Ouvrir 2 packs aujourd'hui         →  18 XP
+Ouvrir 3 packs aujourd'hui         →  25 XP
+Obtenir 1 carte Silver+            →  10 XP
+Obtenir 1 carte Gold+              →  20 XP
+Obtenir 1 carte Diamond+           →  35 XP
+Compléter 1 trade                  →  15 XP
+Décraft 1 carte                    →   5 XP
+Décraft 3 cartes                   →  10 XP
+Décraft 5 cartes                   →  18 XP
+Obtenir un joueur de nation {X}    →  15 XP
 ```
-*(pool de challenges à étoffer — variété importante pour l'engagement)*
+
+**Nation du jour** : une nationalité tirée aléatoirement chaque jour (parmi les nations présentes dans le dataset). Affichée avec le drapeau dans le challenge. Même nation pour tous les joueurs ce jour-là.
+
+---
+
+## Système de Streak (Connexion)
+
+Remplace la quête "Connexion 3J" — récompense la fidélité sur la durée.
+
+### Buffs progressifs
+
+| Palier | Bonus |
+|---|---|
+| Jours 1–6 | XP ×1.0 (base) |
+| Semaine 1 (7j+) | XP ×1.5 sur tous les gains |
+| Semaine 2 (14j+) | XP ×1.5 **+** drop rate boosté (max buff) |
+
+**Drop rate boost (actif dès 14j de streak) :**
+```
+Gold    → ×1.5
+Diamond → ×1.3
+Icon    → ×1.2
+```
+
+### Packs gratuits à la connexion
+
+| Streak atteint | Free packs / connexion |
+|---|---|
+| Pas de streak | 1 pack/jour |
+| 7j+ | 2 packs/jour |
+| 28j+ (1 mois) | 3 packs/jour |
+
+### Pack bonus à claim — chaque milestone semaine
+
+À chaque palier de 7j atteint (7j, 14j, 21j, 28j…) → 1 pack gratuit à claim manuellement (visible dans la queue, pas auto-ouvert). S'accumule si non réclamé.
+
+### Break de streak
+
+Si une journée est manquée, le streak repart à 0. Les buffs tombent immédiatement.
+
+> UI : composant streak déjà designé (barre 7 cases, "STREAK - 12J", "+2 JOURS = PACK BONUS")
 
 ---
 
@@ -1200,6 +1399,19 @@ python main.py --refresh
 → upload images sur R2
 ```
 
+### Alias git — push rapide (`~/.bashrc`)
+```bash
+gitpushcsgo() {
+  git add -A && git commit -m "${1:-update}" && git push
+}
+```
+Usage :
+```bash
+gitpushcsgo "Add pack opening animation"   # avec message
+gitpushcsgo                                # commit "update" par défaut
+```
+Stage tout (`git add -A`), commit, push en une commande depuis n'importe quel terminal WSL.
+
 ### Routes
 | Route | Contenu |
 |---|---|
@@ -1225,7 +1437,9 @@ python main.py --refresh
 - [x] MiniCards — photo full-bleed, halo rareté, Flag CSS, imageOffset (photo_focus)
 - [x] Pack queue + timers — file d'attente (max 2), countdown live, skip pub, CTA bonus
 - [x] Pack opening animation — pack shake + tear + burst → roue × 5 + flip reveal → récap + persist localStorage
-- [ ] Système de level + XP
+- [x] Daily challenges — 5 quests/jour, pool 11 variantes, seed daily, localStorage, hooks pack/rarity/nation, reset minuit
+- [x] XP system frontend — `lib/xp.ts` + `lib/challenges.ts`, courbe 41 niveaux recalibrée ×4 (Silver III = fin sem 1 casual)
+- [x] Système de streak — UI barre 7 cases (logique backend à brancher en V2 avec auth)
 - [ ] Trade want/have market
 - [ ] Intégration ads
 

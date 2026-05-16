@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useLayoutEffect, useEffect } from "react";
-import { getOwnedIds } from "../lib/owned";
+import { getOwnedIds, getOwnedCounts } from "../lib/owned";
 import { C, F, R, RarityTier } from "../lib/tokens";
 import { CardDisplay } from "../lib/cards";
 import MiniCard from "../components/MiniCard";
@@ -287,6 +287,7 @@ function CardGrid({
                 name: c.name,
                 overall: c.overall,
                 role: c.role,
+                team: c.team,
                 teamShort: c.teamShort,
                 imageUrl: c.image_url,
                 noPhoto: c.no_photo,
@@ -323,9 +324,13 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
+  const [ownedCounts, setOwnedCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    const load = () => setOwnedIds(getOwnedIds());
+    const load = () => {
+      setOwnedCounts(getOwnedCounts());
+      setOwnedIds(getOwnedIds());
+    };
     load();
     window.addEventListener("csv-owned-updated", load);
     return () => window.removeEventListener("csv-owned-updated", load);
@@ -410,7 +415,7 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
   }, [lootPoolSet, cards]);
 
   const mineCards = useMemo(() => {
-    let list = cards.filter((c) => ownedIds.has(c.player_id));
+    let list = cards.filter((c) => (ownedCounts[c.player_id] ?? 0) > 0);
     if (rarityFilter) list = list.filter((c) => c.tier === rarityFilter);
     if (categoryFilter) list = list.filter((c) => c.role === categoryFilter);
     if (teamFilter) list = list.filter((c) => c.team === teamFilter);
@@ -423,7 +428,7 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
       }
     }
     return list;
-  }, [cards, ownedIds, rarityFilter, categoryFilter, teamFilter, countryFilter]);
+  }, [cards, ownedCounts, rarityFilter, categoryFilter, teamFilter, countryFilter]);
 
   const filteredAll = useMemo(() => {
     let list = cards;
@@ -523,8 +528,9 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
             {mineCards.map((c) => (
               <MiniCard
                 key={c.player_id}
-                p={{ name: c.name, overall: c.overall, role: c.role, teamShort: c.teamShort, imageUrl: c.image_url, noPhoto: c.no_photo, nationality: c.nationality, imageOffset: c.image_offset }}
+                p={{ name: c.name, overall: c.overall, role: c.role, team: c.team, teamShort: c.teamShort, imageUrl: c.image_url, noPhoto: c.no_photo, nationality: c.nationality, imageOffset: c.image_offset }}
                 tier={c.tier}
+                count={ownedCounts[c.player_id]}
                 w={cardW}
                 h={cardH}
                 onClick={() => setSelected(c)}

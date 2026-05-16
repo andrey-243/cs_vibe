@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { openPack, spinWheel, reset, RARITY, type RevealCard } from "../lib/reveal";
+import { openPack, spinWheel, reset, RARITY, preloadTickBuffer, type RevealCard } from "../lib/reveal";
 import { F, C, type RarityTier } from "../lib/tokens";
 import { calcPackXP } from "../lib/xp";
 import Flag from "./Flag";
@@ -56,6 +56,58 @@ function revealCardToPortrait(card: RevealCard): CardPortraitData {
   };
 }
 
+// ── Diagonal card ribbon — NEW! or IN STOCK · X ─────────────────────────────
+
+function CardBanner({ isNew, stockCount, cardW }: {
+  isNew?: boolean;
+  stockCount?: number;
+  cardW: number;
+}) {
+  if (!isNew && !stockCount) return null;
+
+  const text = isNew ? "NEW !" : `IN STOCK · ${(stockCount ?? 0) + 1}`;
+  const bg = isNew
+    ? "linear-gradient(90deg, #7a1515, #c22828, #7a1515)"
+    : "linear-gradient(90deg, #4a2800, #9a5800, #4a2800)";
+  const borderColor = isNew ? "rgba(255,140,140,0.4)" : "rgba(220,160,60,0.4)";
+
+  // Ribbon spans left→right, angled so the right end lands near the flag (TR)
+  const h = Math.max(14, cardW * 0.10);
+  const top = cardW * 0.14;
+  const left = -(cardW * 0.3);
+  const width = cardW * 1.6;
+  const fontSize = Math.max(5.5, cardW * 0.04);
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top,
+        left,
+        width,
+        height: h,
+        background: bg,
+        border: `1px solid ${borderColor}`,
+        transform: "rotate(-12deg)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontFamily: F.body,
+        fontWeight: 900,
+        fontSize,
+        color: "#fff",
+        letterSpacing: "0.18em",
+        textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.12)",
+        zIndex: 10,
+        pointerEvents: "none",
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
 // ── Large flip card (shown one at a time after each wheel) ───────────────────
 
 function FlipCard({ card }: { card: RevealCard }) {
@@ -95,6 +147,8 @@ function FlipCard({ card }: { card: RevealCard }) {
           background: "linear-gradient(105deg, transparent 20%, rgba(255,255,255,0.22) 50%, transparent 80%)",
           pointerEvents: "none",
         }} />
+
+        <CardBanner isNew={card.isNew} stockCount={card.stockCount} cardW={W} />
 
         {/* TL */}
         <div style={{ position: "absolute", top: 10, left: 11 }}>
@@ -177,6 +231,8 @@ function RecapCard({ card, w, onClick }: { card: RevealCard; w: number; onClick:
           position: "absolute", inset: 0,
           background: "linear-gradient(to bottom, transparent 28%, rgba(0,0,0,0.42) 62%, rgba(0,0,0,0.86) 100%)",
         }} />
+
+        <CardBanner isNew={card.isNew} stockCount={card.stockCount} cardW={w} />
 
         {/* TL */}
         <div style={{ position: "absolute", top: 6, left: 7 }}>
@@ -270,6 +326,9 @@ export default function PackOpenModal({
     onCardsRevealed?.(newRevealed);
     setPhase("done");
   }, [packLabel, cards, pool, onCardsRevealed]);
+
+  // Preload all audio assets on mount so they're ready for the first pack open
+  useEffect(() => { preloadTickBuffer(); }, []);
 
   useEffect(() => {
     if (!open) {
