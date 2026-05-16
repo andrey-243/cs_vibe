@@ -46,6 +46,17 @@ export function addOwnedIds(ids: string[]): void {
   window.dispatchEvent(new Event("csv-owned-updated"));
 }
 
+/** Decrements the count for id by 1. Removes key if count reaches 0. */
+export function removeOwnedId(id: string): void {
+  if (typeof window === "undefined") return;
+  const counts = readCounts();
+  if (!counts[id]) return;
+  counts[id] -= 1;
+  if (counts[id] <= 0) delete counts[id];
+  localStorage.setItem(KEY, JSON.stringify(counts));
+  window.dispatchEvent(new Event("csv-owned-updated"));
+}
+
 export function clearOwned(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(KEY);

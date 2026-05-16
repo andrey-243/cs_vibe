@@ -3,6 +3,7 @@ import { CategoryScores } from "../lib/cards";
 import Flag from "./Flag";
 
 export interface CardPortraitData {
+  player_id?: string;
   name?: string;
   overall?: number;
   role?: string;

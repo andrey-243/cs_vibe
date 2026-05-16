@@ -7,25 +7,36 @@ import MiniCard from "../components/MiniCard";
 import XPBar from "../components/XPBar";
 import Gem from "../components/Gem";
 import { getTotalXP, getLevelInfo } from "../lib/xp";
+import { getGems, addGems, removeGems } from "../lib/gems";
+import { GEM_COLORS } from "../lib/tokens";
 
-const GEMS = [
-  { tier: "TOP5", amount: 0 },
-  { tier: "TOP15", amount: 0 },
-  { tier: "TOP25", amount: 0 },
-  { tier: "TOP50", amount: 0 },
-  { tier: "TOP75", amount: 0 },
-  { tier: "TOP100", amount: 0 },
-] as const;
+const GEM_TIERS = ["TOP5", "TOP15", "TOP25", "TOP50", "TOP75", "TOP100"] as const;
+const CRAFT_THRESHOLD = 250;
+
+const CONVERSIONS: { from: string; cost: number; to: string; gain: number }[] = [
+  { from: "TOP100", cost: 100, to: "TOP75",  gain: 10 },
+  { from: "TOP75",  cost: 10,  to: "TOP50",  gain: 1  },
+  { from: "TOP50",  cost: 5,   to: "TOP25",  gain: 1  },
+  { from: "TOP25",  cost: 5,   to: "TOP15",  gain: 1  },
+  { from: "TOP15",  cost: 5,   to: "TOP5",   gain: 1  },
+];
 
 const SHOWCASE_SLOTS: (RarityTier | null)[] = [null, null, null, null, null];
 
 export default function ProfilPage() {
   const [levelInfo, setLevelInfo] = useState(() => getLevelInfo(getTotalXP()));
+  const [gems, setGems] = useState<Record<string, number>>(() => getGems());
+  const [convertOpen, setConvertOpen] = useState(false);
 
   useEffect(() => {
-    function sync() { setLevelInfo(getLevelInfo(getTotalXP())); }
-    window.addEventListener("csv-xp-updated", sync);
-    return () => window.removeEventListener("csv-xp-updated", sync);
+    function syncXP() { setLevelInfo(getLevelInfo(getTotalXP())); }
+    function syncGems() { setGems(getGems()); }
+    window.addEventListener("csv-xp-updated", syncXP);
+    window.addEventListener("csv-gems-updated", syncGems);
+    return () => {
+      window.removeEventListener("csv-xp-updated", syncXP);
+      window.removeEventListener("csv-gems-updated", syncGems);
+    };
   }, []);
 
   const { current, next, progressPct, totalXP } = levelInfo;
@@ -172,37 +183,57 @@ export default function ProfilPage() {
             border: `1px solid ${C.border}`,
           }}
         >
-          {GEMS.map(({ tier, amount }, i) => (
-            <div
-              key={tier}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: "5px 0",
-                borderTop: i > 0 ? `1px solid ${C.border}` : "none",
-              }}
-            >
-              <Gem tier={tier} size={14} />
-              <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", width: 56 }}>
-                {tier}
+          {/* Gem rows */}
+          {GEM_TIERS.map((tier, i) => {
+            const amount = gems[tier] ?? 0;
+            const pct = Math.min(100, (amount / CRAFT_THRESHOLD) * 100);
+            const ready = amount >= CRAFT_THRESHOLD;
+            const [gemFrom] = GEM_COLORS[tier] ?? [C.teal];
+            return (
+              <div
+                key={tier}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "5px 0",
+                  borderTop: i > 0 ? `1px solid ${C.border}` : "none",
+                }}
+              >
+                <Gem tier={tier} size={14} />
+                <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", width: 56 }}>
+                  {tier}
+                </div>
+                {ready ? (
+                  <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    <span className="gem-pack-dispo" style={{ "--gem-color": gemFrom } as React.CSSProperties}>
+                      PACK DISPO
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ flex: 1, height: 4, borderRadius: 2, background: "rgba(0,0,0,0.3)", overflow: "hidden" }}>
+                    <div
+                      style={{
+                        width: `${pct}%`,
+                        height: "100%",
+                        background: `linear-gradient(90deg, ${C.teal}, ${C.tealDk})`,
+                        transition: "width 0.3s ease",
+                      }}
+                    />
+                  </div>
+                )}
+                <div style={{ fontFamily: F.mono, fontSize: 12, fontWeight: 800, width: 44, textAlign: "right", color: ready ? gemFrom : amount > 0 ? C.ink : C.faint }}>
+                  {amount}
+                </div>
               </div>
-              <div style={{ flex: 1, height: 4, borderRadius: 2, background: "rgba(0,0,0,0.3)", overflow: "hidden" }}>
-                <div style={{ width: `${Math.min(100, amount / 50)}%`, height: "100%", background: `linear-gradient(90deg, ${C.teal}, ${C.tealDk})` }} />
-              </div>
-              <div style={{ fontFamily: F.mono, fontSize: 12, fontWeight: 800, width: 44, textAlign: "right", color: amount > 0 ? C.ink : C.faint }}>
-                {amount}
-              </div>
-            </div>
-          ))}
+            );
+          })}
 
+          {/* Action buttons */}
           <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
-            <div
+            <button
               style={{
                 flex: 1,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
                 padding: "7px 14px",
                 borderRadius: 8,
                 background: `linear-gradient(180deg, ${C.teal} 0%, #3a8094 100%)`,
@@ -212,30 +243,124 @@ export default function ProfilPage() {
                 fontWeight: 700,
                 color: "#0a1a1f",
                 cursor: "pointer",
+                touchAction: "manipulation",
               }}
             >
               Craft pack
-            </div>
-            <div
+            </button>
+            <button
+              onClick={() => setConvertOpen((v) => !v)}
               style={{
                 flex: 1,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
                 padding: "7px 14px",
                 borderRadius: 8,
-                background: "rgba(255,255,255,0.06)",
-                border: "1px solid rgba(255,255,255,0.12)",
+                background: convertOpen ? "rgba(255,255,255,0.10)" : "rgba(255,255,255,0.06)",
+                border: `1px solid ${convertOpen ? C.borderHi : "rgba(255,255,255,0.12)"}`,
                 fontFamily: F.body,
                 fontSize: 11,
                 fontWeight: 700,
                 color: C.ink,
                 cursor: "pointer",
+                touchAction: "manipulation",
               }}
             >
-              Convertir
-            </div>
+              {convertOpen ? "✕ Fermer" : "Convertir"}
+            </button>
           </div>
+
+          {/* Conversion panel */}
+          {convertOpen && (
+            <div
+              style={{
+                marginTop: 10,
+                paddingTop: 10,
+                borderTop: `1px solid ${C.border}`,
+              }}
+            >
+              <div style={{ fontFamily: F.mono, fontSize: 8, letterSpacing: "0.12em", textTransform: "uppercase", color: C.faint, marginBottom: 6 }}>
+                CONVERSION ASCENDANTE
+              </div>
+              {CONVERSIONS.map(({ from, cost, to, gain }) => {
+                const have = gems[from] ?? 0;
+                const maxTimes = Math.floor(have / cost);
+                const [fromColor] = GEM_COLORS[from] ?? [C.muted];
+                const [toColor] = GEM_COLORS[to] ?? [C.teal];
+
+                function doConvert(times: number) {
+                  if (times <= 0) return;
+                  removeGems(from, cost * times);
+                  addGems(to, gain * times);
+                }
+
+                const BTN_W = 36;
+                const multiBtns: { label: string; times: number }[] = [
+                  { label: "×1",   times: 1 },
+                  { label: "×10",  times: 10 },
+                  { label: "×100", times: 100 },
+                  { label: "ALL",  times: maxTimes },
+                ];
+
+                return (
+                  <div
+                    key={from}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 5,
+                      padding: "6px 0",
+                      borderTop: `1px solid ${C.border}`,
+                    }}
+                  >
+                    {/* Rate label */}
+                    <Gem tier={from} size={11} />
+                    <span style={{ fontFamily: F.mono, fontSize: 10, fontWeight: 800, color: maxTimes > 0 ? fromColor : C.faint, minWidth: 24 }}>
+                      {cost}
+                    </span>
+                    <span style={{ fontFamily: F.mono, fontSize: 9, color: C.faint }}>→</span>
+                    <Gem tier={to} size={11} />
+                    <span style={{ fontFamily: F.mono, fontSize: 10, fontWeight: 800, color: toColor, minWidth: 16 }}>
+                      {gain}
+                    </span>
+
+                    {/* Dispo */}
+                    <span style={{ fontFamily: F.mono, fontSize: 8, color: C.faint, flex: 1 }}>
+                      {maxTimes > 0 ? `×${maxTimes}` : `${have}/${cost}`}
+                    </span>
+
+                    {/* 4 buttons same width */}
+                    <div style={{ display: "flex", gap: 3 }}>
+                      {multiBtns.map(({ label, times }) => {
+                        const can = times > 0 && have >= cost * times;
+                        return (
+                          <button
+                            key={label}
+                            onClick={() => doConvert(times)}
+                            disabled={!can}
+                            style={{
+                              width: BTN_W,
+                              padding: "4px 0",
+                              borderRadius: 5,
+                              background: can ? `linear-gradient(135deg, ${toColor}2e, ${toColor}18)` : "rgba(255,255,255,0.03)",
+                              border: can ? `1px solid ${toColor}55` : "1px solid rgba(255,255,255,0.07)",
+                              color: can ? toColor : C.faint,
+                              fontFamily: F.mono,
+                              fontSize: 9,
+                              fontWeight: 800,
+                              cursor: can ? "pointer" : "not-allowed",
+                              touchAction: "manipulation",
+                              letterSpacing: "0.02em",
+                            }}
+                          >
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>

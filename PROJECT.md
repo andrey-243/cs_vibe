@@ -339,9 +339,20 @@ Séquence en 3 phases déclenchée par "Ouvrir →" sur un pack prêt.
 
 **Interface `RevealCard` :**
 ```ts
-{ tier, ovr, name, player_id, role, teamShort, nationality, image_offset, categoryScores? }
+{ tier, ovr, name, player_id, role, teamShort, teamRank?, nationality, image_offset, categoryScores?,
+  isNew?: boolean,      // true = première copie jamais obtenue
+  stockCount?: number   // nb de copies possédées AVANT l'ouverture de ce pack
+}
 ```
-`categoryScores` = `{ firepower, opening, clutching, entrying, trading, impact }` — passé depuis l'API et transmis à `CardDetailModal` via `revealCardToPortrait()`.
+`categoryScores` = `{ firepower, opening, clutching, entrying, trading, impact }` — passé depuis l'API et transmis à `CardDetailModal` via `revealCardToPortrait()`.  
+`teamRank` = rank HLTV de l'équipe — utilisé pour calculer le tier de gems lors d'un Uncraft.
+
+**Banners reveal (flip + récap) :**
+`CardBanner` dans `PackOpenModal.tsx` — bandeau diagonal (rotate -12°) affiché sur les cartes au flip reveal et dans le récap :
+- **"NEW !"** (fond rouge `#c22828`) → `isNew === true` (première copie)
+- **"IN STOCK · X"** (fond ambre `#9a5800`) → doublon, X = `(stockCount ?? 0) + 1` = nouveau total après ce drop
+- Sizing proportionnel à `cardW` : `top = cardW * 0.14`, `width = cardW * 1.6`, `h = max(14, cardW * 0.10)`
+- Placé à l'intérieur de la carte (`overflow: hidden`) pour être coupé par les bords arrondis
 
 ---
 
@@ -478,9 +489,16 @@ Timing collision fix :
 Fallback playLanding (si _cardAppearBuf null) : synthèse originale conservée par rareté.
 
 ### Collection — cartes possédées (localStorage)
-- `app/lib/owned.ts` — store client : `getOwnedIds()` / `addOwnedIds(ids[])` / `clearOwned()`
-- Après chaque pack ouvert : `addOwnedIds` persiste les `player_id` en localStorage + dispatche `window Event("csv-owned-updated")`
-- `CollectionGrid` écoute cet event → `setOwnedIds(getOwnedIds())` → "Mes cartes" se met à jour en temps réel sans reload
+- `app/lib/owned.ts` — store client basé sur les **counts** (pas un Set) :
+  - `KEY = "csv_owned_counts"` → `Record<string, number>` (player_id → nb de copies)
+  - Migration automatique depuis l'ancien format Set (`csv_owned_ids`) au premier chargement
+  - `getOwnedCounts()` → `Record<string, number>`
+  - `getOwnedIds()` → `Set<string>` (pour compat backward)
+  - `addOwnedIds(ids[])` → incrémente le count de chaque id, dispatche `window.Event("csv-owned-updated")`
+  - `clearOwned()` → supprime les deux clés localStorage
+- Après chaque pack ouvert : `addOwnedIds` persiste les counts + dispatche l'event
+- `CollectionGrid` écoute l'event → met à jour `ownedCounts` + `ownedIds` en temps réel sans reload
+- **Snapshot pre-pack** : `getOwnedCounts()` capturé AVANT `addOwnedIds` dans `openPack()` → permet de calculer `isNew` et `stockCount` au moment du reveal
 
 ### Flag.tsx
 Composant drapeau wrappant `flag-icons`. Props : `code` (ISO-2), `width` (défaut 18), `rounded` (défaut true). Render via `className="fi fi-{code}"` + sizing inline. Fallback `null` si code absent. `flag-icons` importé dans `layout.tsx`. Utiliser ce composant — pas de `<span>` inline direct.
@@ -490,8 +508,10 @@ Photo full-bleed, gradient noir bas. Taille défaut **84×124px** (ratio 1.476 �
 
 Layout :
 - TL : overall (24px fw=800) + rôle 3 lettres (6.5px, couleur chrome) en dessous
-- TR : `<Flag code={...} width={14} />`
-- Bas : nom (12px fw=800) + teamShort (6.5px) + panel stats dark optionnel (si `categoryScores` fourni)
+- TR : `<Flag code={...} width={14} />` — positionné `top: 4` (plus haut qu'avant)
+- Bas : nom (12px fw=800) + **team full name** (8px fw=700, F.mono) + panel stats dark optionnel (si `categoryScores` fourni)
+  - `p?.team ?? p?.teamShort ?? "SPI"` — prend le full name en priorité
+  - Zone bas `right` réservée si triangle actif : `right: triSize > 0 ? triSize + 2 : 8`
 
 Détails visuels :
 - Glow halo : `radial-gradient(ellipse, ${chrome.glow}, transparent 70%)`, inset **-6px**, blur **8px**
@@ -500,17 +520,42 @@ Détails visuels :
 - Fond : `chrome.bg = linear-gradient(160deg, tier.from, tier.to)` via `rarityChrome()`
 - Prop `imageOffset?: string` → CSS `object-position` sur la photo (défaut `"top center"`)
 
+`rarityChrome()` retourne `{ bg, glow, label, from, to }` — `from` et `to` sont les couleurs brutes de la rareté (utilisées notamment pour le triangle de count).
+
 Props supplémentaires :
 - `locked?: boolean` → overlay sombre `rgba(6,6,10,0.72)` + rayures diagonales `repeating-linear-gradient(135deg, rgba(255,255,255,0.045) 0px 2px, transparent 2px 11px)` — utilisé pour les cartes non obtenues dans "Toutes"
 - `isNew?: boolean` → badge rouge "NEW" TL (zIndex 3, au-dessus du locked overlay)
+- `count?: number` → quart de cercle coin bas-droit quand > 1 copie possédée
+  - `badgeR = 18` (rayon) — div cercle 36×36px centré sur le coin : `bottom: -badgeR, right: -badgeR`
+  - `overflow: hidden` du card body clip le cercle en quart de cercle naturellement (suit le `borderRadius: 8`)
+  - Dégradé `linear-gradient(135deg, chrome.from, chrome.to)` — suit la logique visuelle de la carte
+  - Chiffre centré sur le centroïde du quart de cercle : `top/left: badgeR * 0.58` + `transform: translate(-50%, -50%)`
+  - Font proportionnelle : `fontSize: badgeR * 0.45` (8px pour r=18) — garantit que le chiffre reste dans l'arc quelle que soit la taille
+  - Placé **à l'intérieur** du card body (avant le `</div>`) — le clip `overflow:hidden` fait le travail
 
 ### CardDetailModal (`components/CardDetailModal.tsx`)
 - Photo full-bleed (270×390), gradient `rgba(0,0,0,0.93) → transparent 80%` depuis le bas
 - TL : overall (60px fw=800) + tier (9px, couleur chrome)
 - TR : `<span className="fi fi-{iso2}">` (22×16px) + rôle plein mot (ENT→"Entry", AWP→"AWPer", etc.)
 - Bottom overlay : nom (26px fw=800) + team mono (9.5px) + grille stats 3×2 (18px/7.5px, ligne top séparatrice uniquement, pas de barres entre cellules)
-- Boutons Détails / Trade en dessous (270px wide)
 - Stats : 6 `category_scores` (FIR/OPN/CLU/ENT/TRD/IMP) affichés en 3×2. **Non passés aux MiniCards de la grille** (seulement au modal).
+
+**4 boutons en 2×2 sous la carte (270px wide) :**
+- Rangée 1 (liens externes) : **HLTV** | **Liquipedia** — s'ouvrent dans un nouvel onglet
+  - HLTV : `https://www.hltv.org/player/{player_id}/{name}` — auto depuis le `player_id` JSON (ID HLTV natif)
+  - Liquipedia : `https://liquipedia.net/counterstrike/Special:Search?search={name}` — search URL (noms lowercase dans le JSON, Liquipedia est case-sensitive → search toujours fiable)
+- Rangée 2 (actions) : **Trade** (grisé, non implémenté) | **Uncraft**
+
+**Uncraft — flow :**
+1. Clic "Uncraft" → bouton se transforme en `{X} 💎 {TOPXX} · Confirmer` (couleur gem du tier) + `✕ Annuler` à gauche
+2. Clic confirmation → `removeOwnedId(player_id)` + `addGems(tier, amount)` + `onCardsDecrafted(1)` + fermeture modale
+3. Désactivé (grisé) si `ownedCount === 0` (carte non possédée — vue locked dans "Toutes")
+
+**Montants Uncraft :** Bronze 5 · Silver 12 · Gold 30 · Diamond 75 · Legacy 30 · Icon 400  
+**Tier gem :** calculé depuis `card.teamRank` — TOP5 (#1–5), TOP15 (#6–15), TOP25 (#16–25), TOP50 (#26–50), TOP75 (#51–75), TOP100 (#76+)
+
+**Props :** `card: CardPortraitData` (inclut `player_id`, `teamRank`) · `tier: RarityTier` · `ownedCount?: number` · `onClose`  
+`ownedCount` passé depuis CollectionGrid (`ownedCounts[player_id]`) et PackOpenModal (`stockCount + 1`).
 
 ### Collection
 - Données réelles depuis `players_cards.json` via `loadCards()`, cache mémoire dans `cards.ts`
@@ -643,7 +688,7 @@ Site web **phone-first** : la nav est pensée pour mobile, c'est ok si sur deskt
 
 | Tab | Contenu |
 |---|---|
-| **Pack** | Packs en queue + timers, daily, bonus pub, bouton ouvrir. Banner Major si un Major est actif. |
+| **Pack** | Deux queues (daily + bonus). Flow : Claim → timer → Accélérer pub(s) → Ouvrir. Streak widget. Défis du jour. Banner Major si actif. |
 | **Collection** | Mes cartes (défaut) + toggle "Toutes les cartes". Filtres : équipe, rareté, nation. |
 | **Trade** | Marché passif want/have. Mes offres, ma wishlist, matches en attente, slots restants. |
 | **Profil** | Level + XP, rank CS/Faceit/ESEA affiché, showcase 5 cartes favorites, gemmes par tier, gem shop, settings. |
@@ -654,27 +699,59 @@ Site web **phone-first** : la nav est pensée pour mobile, c'est ok si sur deskt
 
 ### Pack
 
+**Deux queues indépendantes — daily et bonus**
+
 ```
-Pack standard (pool all players)
-├── 1 gratuit / 12h
-└── 1 bonus via pub / 6h   — max 2 packs en queue simultanément
+Daily queue  (N slots, croît avec le streak)
+├── Spawn interval : 24h / N  (N=1→/12h, N=2→/12h staggeré, N=3→/8h, N=4→/6h)
+├── Flow : spawn → Claim → timer 1h → Accélérer pub(s) → Ouvrir
+├── XP : base × streak_mult
+└── Drop : base + streak boost
+
+Bonus queue  (1 slot fixe, toujours disponible — ex-ads)
+├── Add pack : ▶ Obtenir (1 pub), cooldown 6h, timer démarre immédiatement
+├── Flow : ▶ Obtenir → timer 1h → Accélérer pub(s) → Ouvrir
+├── XP : base × streak_mult × 1.2   ← toujours supérieur au daily
+└── Drop : daily_drop × (Gold ×1.15 · Dia ×1.08 · Icon ×1.05)  ← toujours supérieur
 
 5 cartes par pack
 ```
 
-**Ouverture style Clash Royale — timer selon le type de pack :**
+**Flow détaillé — daily/milestone :**
+```
+1. Pack spawn dans la queue (état "À CLAIM")
+2. User clique "Claim →" → timer 1h démarre
+3. User clique "▶ Accélérer X/Y" → réduit au palier suivant
+4. Sur le dernier palier (instant) : bouton devient "▶ Ouvrir" → pub + ouverture en 1 clic
+5. Quand prêt sans pub : bouton "Ouvrir →" (sans ▶)
+```
+
+**Convention boutons — signe ▶ = pub requise :**
+- `▶ Obtenir` — débloquer le pack bonus (1 pub)
+- `▶ Accélérer X/Y` — pub intermédiaire (réduit au palier suivant)
+- `▶ Ouvrir` — dernière pub, pack s'ouvre immédiatement après
+- `Ouvrir →` — pack prêt, aucune pub requise
+- `Claim →` — réclamer un pack disponible (gratuit, sans pub)
+
+**Skip timer — incrémental, universel (s'applique à TOUS les slots des deux queues)**
+
+Chaque pub réduit au palier suivant. Dernier palier = instant (ouvre directement). Max 3 pubs.
 
 ```
-Pack daily / bonus ads
-└── 1h  →  1 pub  →  instant
+Timer initial │ Pub 1     │ Pub 2     │ Pub 3
+──────────────┼───────────┼───────────┼────────
+1h            │ → 10 min  │ → instant │ —
+2h            │ → 30 min  │ → 10 min  │ → instant
+4h            │ → 1h      │ → 10 min  │ → instant
+6h            │ → 1h      │ → 10 min  │ → instant
+8h            │ → 1h      │ → 10 min  │ → instant
+12h           │ → 2h      │ → 30 min  │ → instant
+```
 
-Pack gem crafté
-├── TOP 100 :  1h  →  1 pub  →  instant
-├── TOP 75  :  2h  →  1 pub  →  30min  →  1 pub  →  instant
-├── TOP 50  :  4h  →  1 pub  →  30min  →  1 pub  →  instant
-├── TOP 25  :  6h  →  1 pub  →  1h     →  1 pub  →  10min  →  1 pub  →  instant
-├── TOP 15  :  8h  →  1 pub  →  1h     →  1 pub  →  10min  →  1 pub  →  instant
-└── TOP 5   : 12h  →  1 pub  →  2h     →  1 pub  →  30min  →  1 pub  →  instant
+**Pack gem crafté** (timer selon le tier — inchangé, utilise la même table de skip) :
+```
+TOP 100 :  1h   TOP 75 :  2h   TOP 50 :  4h
+TOP 25  :  6h   TOP 15 :  8h   TOP 5  : 12h
 ```
 
 Plus le pack est rare → plus l'attente est longue → plus de pubs nécessaires pour skipper.  
@@ -715,6 +792,29 @@ Les gemmes sont **tiérisées par ranking d'équipe** — chaque tier est une mo
 | TOP 50 | #26 → #50 | 💎 TOP 50 |
 | TOP 75 | #51 → #75 | 💎 TOP 75 |
 | TOP 100 | #76 → #100 | 💎 TOP 100 |
+
+**`app/lib/gems.ts` — store client (localStorage)**
+- Clé `csv_gems` → `Record<string, number>` (tier → count)
+- `getGems()` → counts courants
+- `addGems(tier, amount)` → incrémente + dispatche `window.Event("csv-gems-updated")`
+- `removeGems(tier, amount)` → décrémente (clamp 0, supprime la clé si vide) + dispatche event
+- TopBar `GemsButton` et tab Profil écoutent `csv-gems-updated` → mise à jour temps réel sans reload
+- `removeOwnedId(id)` ajouté à `owned.ts` — décrémente le count, supprime la clé si 0
+
+**UI gems — tab Profil (`app/profil/page.tsx`)**
+- Seuil craft : `CRAFT_THRESHOLD = 250` gems par tier
+- Barre de progression : `amount / 250 × 100%` — pleine = pack craftable
+- Quand `amount >= 250` : la barre est remplacée par un badge **PACK DISPO** centré, couleur du tier, animation `gem-pulse` (glow respirant 1.8s, style "NEW!" des cartes)
+- Système Convertir (bouton toggle, panel inline) :
+  ```
+  100 TOP100 → 10 TOP75    boutons ×1 · ×10 · ×100 · ALL
+   10 TOP75  →  1 TOP50    boutons ×1 · ×10 · ×100 · ALL
+    5 TOP50  →  1 TOP25    boutons ×1 · ×10 · ×100 · ALL
+    5 TOP25  →  1 TOP15    boutons ×1 · ×10 · ×100 · ALL
+    5 TOP15  →  1 TOP5     boutons ×1 · ×10 · ×100 · ALL
+  ```
+  - Chaque bouton activé si `gems[from] >= cost × times` ; ALL = `Math.floor(gems[from] / cost)`
+  - Clic → `removeGems(from, cost × times)` + `addGems(to, gain × times)` → event → UI live
 
 **Décraft (carte → gems) — tier de l'équipe du joueur, montant selon la rareté :**
 
@@ -784,8 +884,8 @@ Icon       →  60 XP
 
 **Multiplicateur selon le pack ouvert :**
 ```
-Pack daily gratuit    × 1.0
-Pack bonus (ads)      × 1.2
+Pack daily            × streak_mult (×1.05 → ×1.50 selon la progression streak)
+Pack ads              × streak_mult × 1.2   (toujours supérieur au daily)
 Mécanique Major       × 1.5
 ```
 
@@ -1222,40 +1322,32 @@ Obtenir un joueur de nation {X}    →  15 XP
 
 ## Système de Streak (Connexion)
 
-Remplace la quête "Connexion 3J" — récompense la fidélité sur la durée.
+Récompense la fidélité sur la durée. Deux queues indépendantes (daily + bonus) dont le daily croît avec le streak.
 
-### Buffs progressifs
+### Progression complète
 
-| Palier | Bonus |
-|---|---|
-| Jours 1–6 | XP ×1.0 (base) |
-| Semaine 1 (7j+) | XP ×1.5 sur tous les gains |
-| Semaine 2 (14j+) | XP ×1.5 **+** drop rate boosté (max buff) |
+| Semaine | Jours | Daily slots | Spawn daily | Queue daily max | Ads slot | XP mult (daily) | Drop Gold | Drop Dia | Drop Icon | Milestone |
+|---------|-------|-------------|-------------|-----------------|----------|-----------------|-----------|----------|-----------|-----------|
+| S1 | J1–J6 | 1 | /12h | 2 | ✅ 1 | ×1.05 | — | — | — | — |
+| **S2 ★** | J7–J13 | **2** | /12h | **3** | ✅ 1 | **×1.13** | **×1.13** | **×1.08** | **×1.05** | J7 |
+| **S3 ★** | J14–J20 | 2 | /12h | 3 | ✅ 1 | **×1.25** | **×1.25** | **×1.15** | **×1.10** | J14 |
+| **S4 ★** | J21–J27 | **3** | **/8h** | 3 | ❌ 0 | **×1.38** | **×1.38** | **×1.23** | **×1.15** | J21 |
+| S5 | J28–J34 | 3 | /8h | 3 | ❌ 0 | **×1.50 MAX** | **×1.50 MAX** | **×1.30 MAX** | **×1.20 MAX** | J28 |
+| **M1 ★** | J35+ | **4 CAP** | **/6h** | **4 CAP** | ❌ 0 | ×1.50 | MAX | MAX | MAX | J35+ : 1/7j |
 
-**Drop rate boost (actif dès 14j de streak) :**
-```
-Gold    → ×1.5
-Diamond → ×1.3
-Icon    → ×1.2
-```
+**Règles :**
+- Queue daily max = daily slots (plus de slot bonus à S4+ = mécanique de rétention intentionnelle)
+- S4 (3 daily / 8h, queue max 3) : queue pleine après 24h sans ouverture → packs perdus → force le retour
+- Bonus queue toujours disponible (1 slot fixe, XP et drops toujours supérieurs au daily)
+- Bonus XP = daily XP × 1.2 · Bonus drop = daily drop × (Gold ×1.15 · Dia ×1.08 · Icon ×1.05)
 
-### Packs gratuits à la connexion
-
-| Streak atteint | Free packs / connexion |
-|---|---|
-| Pas de streak | 1 pack/jour |
-| 7j+ | 2 packs/jour |
-| 28j+ (1 mois) | 3 packs/jour |
-
-### Pack bonus à claim — chaque milestone semaine
-
-À chaque palier de 7j atteint (7j, 14j, 21j, 28j…) → 1 pack gratuit à claim manuellement (visible dans la queue, pas auto-ouvert). S'accumule si non réclamé.
+**Milestones :** chaque multiple de 7j → 1 pack à claim manuellement (s'accumule si non réclamé).
 
 ### Break de streak
 
 Si une journée est manquée, le streak repart à 0. Les buffs tombent immédiatement.
 
-> UI : composant streak déjà designé (barre 7 cases, "STREAK - 12J", "+2 JOURS = PACK BONUS")
+> UI : widget full-width au-dessus des défis — streak en jours (grand), badge ×XP, N packs/jour, barre 7 cases fine, hint dynamique vers le palier suivant (ou "★ PALIER MAXIMUM ATTEINT").
 
 ---
 
@@ -1435,11 +1527,11 @@ Stage tout (`git add -A`), commit, push en une commande depuis n'importe quel te
 - [x] Frontend Next.js — phone-first, 4 tabs (Pack, Collection, Trade, Profil)
 - [x] Collection — données réelles, filtres Rarity/Role/Team/PAYS (loot pool), pagination, modal détail
 - [x] MiniCards — photo full-bleed, halo rareté, Flag CSS, imageOffset (photo_focus)
-- [x] Pack queue + timers — file d'attente (max 2), countdown live, skip pub, CTA bonus
+- [x] Pack queue + timers — deux queues (daily + bonus), Claim → timer 1h → Accélérer pub(s) → Ouvrir, convention ▶ = pub
 - [x] Pack opening animation — pack shake + tear + burst → roue × 5 + flip reveal → récap + persist localStorage
 - [x] Daily challenges — 5 quests/jour, pool 11 variantes, seed daily, localStorage, hooks pack/rarity/nation, reset minuit
 - [x] XP system frontend — `lib/xp.ts` + `lib/challenges.ts`, courbe 41 niveaux recalibrée ×4 (Silver III = fin sem 1 casual)
-- [x] Système de streak — UI barre 7 cases (logique backend à brancher en V2 avec auth)
+- [x] Système de streak — widget full-width (jours, ×XP mult, barre 7 cases, hint palier suivant), logique localStorage complète
 - [ ] Trade want/have market
 - [ ] Intégration ads
 

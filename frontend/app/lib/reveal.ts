@@ -24,6 +24,7 @@ export interface RevealCard {
   isNew?: boolean;
   /** copies owned before this pack opened */
   stockCount?: number;
+  teamRank?: number;
 }
 
 export interface OpenPackOpts {
@@ -246,11 +247,11 @@ export function playLanding(tier: string, when = 0) {
     // WAV-based — per-rarity: offset into WAV + rate + vol
     // WAV structure: small click at ~420ms, main impact at ~1550ms, long tail
     const profiles: Record<string, { offset: number; rate: number; vol: number; shimmer?: boolean }> = {
-      BRONZE:  { offset: 0.38, rate: 0.75, vol: 0.50 },              // small click, dark/dull
-      SILVER:  { offset: 0.38, rate: 0.90, vol: 0.65 },              // small click, brighter
-      GOLD:    { offset: 1.50, rate: 1.00, vol: 0.80, shimmer: true },// full impact
-      DIAMOND: { offset: 1.45, rate: 1.10, vol: 1.00, shimmer: true },// more buildup + brighter
-      ICON:    { offset: 1.35, rate: 1.25, vol: 1.15, shimmer: true },// max buildup + highest pitch
+      BRONZE:  { offset: 1.50, rate: 0.75, vol: 0.50 },
+      SILVER:  { offset: 1.50, rate: 0.88, vol: 0.65 },
+      GOLD:    { offset: 1.50, rate: 1.00, vol: 0.80, shimmer: true },
+      DIAMOND: { offset: 1.50, rate: 1.10, vol: 1.00, shimmer: true },
+      ICON:    { offset: 1.50, rate: 1.25, vol: 1.15, shimmer: true },
     };
     const p = profiles[tier] ?? profiles.BRONZE;
     const t = ctx.currentTime + when;

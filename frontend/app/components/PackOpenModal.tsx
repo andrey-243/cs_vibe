@@ -45,10 +45,12 @@ const ROLE_FULL: Record<string, string> = {
 
 function revealCardToPortrait(card: RevealCard): CardPortraitData {
   return {
+    player_id: card.player_id,
     name: card.name,
     overall: card.ovr,
     role: card.role,
     teamShort: card.teamShort,
+    teamRank: card.teamRank,
     nationality: card.nationality ?? null,
     imageUrl: card.player_id ? `/api/player-image/${card.player_id}` : null,
     imageOffset: card.image_offset,
@@ -461,6 +463,7 @@ export default function PackOpenModal({
           <CardDetailModal
             card={revealCardToPortrait(selectedCard)}
             tier={selectedCard.tier as RarityTier}
+            ownedCount={(selectedCard.stockCount ?? 0) + 1}
             onClose={() => setSelectedCard(null)}
           />
         </div>

@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import { C, F, R, RarityTier, rarityChrome } from "../lib/tokens";
+import { useEffect, useState } from "react";
+import { C, F, GEM_COLORS, R, RarityTier, rarityChrome } from "../lib/tokens";
 import { CardPortraitData } from "./CardPortrait";
 import { CategoryScores } from "../lib/cards";
+import { removeOwnedId } from "../lib/owned";
+import { addGems } from "../lib/gems";
+import { onCardsDecrafted } from "../lib/challenges";
 
 const STAT_LABELS: [keyof CategoryScores, string][] = [
   ["firepower", "FIR"],
@@ -23,18 +26,74 @@ const ROLE_FULL: Record<string, string> = {
   LRK: "Lurker",
 };
 
+const GEM_BY_RARITY: Record<RarityTier, number> = {
+  BRONZE: 5,
+  SILVER: 12,
+  GOLD: 30,
+  DIAMOND: 75,
+  ICON: 400,
+  LEGACY: 30,
+};
+
+function gemTier(teamRank: number): string {
+  if (teamRank <= 5) return "TOP5";
+  if (teamRank <= 15) return "TOP15";
+  if (teamRank <= 25) return "TOP25";
+  if (teamRank <= 50) return "TOP50";
+  if (teamRank <= 75) return "TOP75";
+  return "TOP100";
+}
+
+const BTN_LINK: React.CSSProperties = {
+  flex: 1,
+  padding: "13px 0",
+  borderRadius: 12,
+  background: "rgba(56,200,210,0.14)",
+  border: "1px solid rgba(56,200,210,0.45)",
+  color: "#7ee8ed",
+  fontFamily: F.body,
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: "0.06em",
+  cursor: "pointer",
+  touchAction: "manipulation",
+  textDecoration: "none",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const BTN_GRAY: React.CSSProperties = {
+  flex: 1,
+  padding: "13px 0",
+  borderRadius: 12,
+  background: "rgba(255,255,255,0.06)",
+  border: "1px solid rgba(255,255,255,0.10)",
+  color: C.faint,
+  fontFamily: F.body,
+  fontSize: 12,
+  fontWeight: 700,
+  letterSpacing: "0.06em",
+  cursor: "not-allowed",
+  touchAction: "manipulation",
+};
 
 export default function CardDetailModal({
   card,
   tier,
+  ownedCount = 0,
   onClose,
 }: {
   card: CardPortraitData | null;
   tier: RarityTier;
+  ownedCount?: number;
   onClose: () => void;
 }) {
+  const [uncrafting, setUncrafting] = useState(false);
+
   useEffect(() => {
     if (!card) return;
+    setUncrafting(false);
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
@@ -48,6 +107,28 @@ export default function CardDetailModal({
   const r = R[tier];
   const showPhoto = card.imageUrl && !card.noPhoto;
   const roleFull = ROLE_FULL[card.role ?? "RIF"] ?? card.role ?? "Rifler";
+
+  // External links
+  const hltvUrl = card.player_id && card.name
+    ? `https://www.hltv.org/player/${card.player_id}/${card.name.toLowerCase()}`
+    : `https://www.hltv.org/search?query=${encodeURIComponent(card.name ?? "")}`;
+  const liqUrl = card.name
+    ? `https://liquipedia.net/counterstrike/Special:Search?search=${encodeURIComponent(card.name)}`
+    : "https://liquipedia.net/counterstrike/";
+
+  // Uncraft
+  const gTier = gemTier(card.teamRank ?? 999);
+  const gAmt = GEM_BY_RARITY[tier] ?? 5;
+  const [gemFrom, gemTo] = GEM_COLORS[gTier] ?? ["#c9a565", "#705028"];
+  const canUncraft = ownedCount >= 1;
+
+  function doUncraft() {
+    if (!card?.player_id || !canUncraft) return;
+    removeOwnedId(card.player_id);
+    addGems(gTier, gAmt);
+    onCardsDecrafted(1);
+    onClose();
+  }
 
   return (
     <div
@@ -113,7 +194,7 @@ export default function CardDetailModal({
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          gap: 14,
+          gap: 10,
         }}
       >
         {/* ── FOCUS CARD ─────────────────────────────────────── */}
@@ -155,7 +236,7 @@ export default function CardDetailModal({
             />
           )}
 
-          {/* Heavy fade from bottom — covers name + stats zone */}
+          {/* Heavy fade from bottom */}
           <div
             style={{
               position: "absolute",
@@ -254,7 +335,6 @@ export default function CardDetailModal({
               zIndex: 3,
             }}
           >
-            {/* Name */}
             <div
               style={{
                 fontSize: 26,
@@ -267,7 +347,6 @@ export default function CardDetailModal({
               {card.name ?? "Player"}
             </div>
 
-            {/* Team */}
             <div
               style={{
                 fontFamily: F.mono,
@@ -294,13 +373,10 @@ export default function CardDetailModal({
                 borderTop: "1px solid rgba(255,255,255,0.15)",
               }}
             >
-              {STAT_LABELS.map(([key, label], i) => (
+              {STAT_LABELS.map(([key, label]) => (
                 <div
                   key={key}
-                  style={{
-                    textAlign: "center",
-                    padding: "9px 0",
-                  }}
+                  style={{ textAlign: "center", padding: "9px 0" }}
                 >
                   <div
                     style={{
@@ -329,46 +405,99 @@ export default function CardDetailModal({
           </div>
         </div>
 
-        {/* ── ACTION BUTTONS ─────────────────────────────────── */}
-        <div style={{ display: "flex", gap: 10, width: 270 }}>
-          <button
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              flex: 1,
-              padding: "14px 0",
-              borderRadius: 12,
-              background: "rgba(56,200,210,0.18)",
-              border: "1px solid rgba(56,200,210,0.55)",
-              color: "#7ee8ed",
-              fontFamily: F.body,
-              fontSize: 13,
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              cursor: "pointer",
-              touchAction: "manipulation",
-            }}
-          >
-            Détails
-          </button>
-          <button
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              flex: 1,
-              padding: "14px 0",
-              borderRadius: 12,
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.14)",
-              color: C.muted,
-              fontFamily: F.body,
-              fontSize: 13,
-              fontWeight: 700,
-              letterSpacing: "0.06em",
-              cursor: "pointer",
-              touchAction: "manipulation",
-            }}
-          >
-            Trade
-          </button>
+        {/* ── ACTION BUTTONS 2×2 ─────────────────────────────── */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, width: 270 }}>
+
+          {/* Row 1 — external links */}
+          <div style={{ display: "flex", gap: 10 }}>
+            <a
+              href={hltvUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={BTN_LINK}
+            >
+              HLTV
+            </a>
+            <a
+              href={liqUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={BTN_LINK}
+            >
+              Liquipedia
+            </a>
+          </div>
+
+          {/* Row 2 — trade + uncraft */}
+          <div style={{ display: "flex", gap: 10 }}>
+            {uncrafting ? (
+              <>
+                {/* Cancel */}
+                <button
+                  onClick={() => setUncrafting(false)}
+                  style={{
+                    ...BTN_GRAY,
+                    cursor: "pointer",
+                    color: C.muted,
+                    border: "1px solid rgba(255,255,255,0.18)",
+                  }}
+                >
+                  ✕ Annuler
+                </button>
+                {/* Confirm */}
+                <button
+                  onClick={doUncraft}
+                  style={{
+                    flex: 1,
+                    padding: "13px 0",
+                    borderRadius: 12,
+                    background: `linear-gradient(135deg, ${gemFrom}33, ${gemTo}55)`,
+                    border: `1px solid ${gemFrom}88`,
+                    color: gemFrom,
+                    fontFamily: F.body,
+                    fontSize: 11,
+                    fontWeight: 800,
+                    letterSpacing: "0.05em",
+                    cursor: "pointer",
+                    touchAction: "manipulation",
+                  }}
+                >
+                  {gAmt} 💎 {gTier}
+                </button>
+              </>
+            ) : (
+              <>
+                {/* Trade — grayed */}
+                <button style={BTN_GRAY} disabled>
+                  Trade
+                </button>
+                {/* Uncraft */}
+                <button
+                  onClick={() => canUncraft && setUncrafting(true)}
+                  style={{
+                    flex: 1,
+                    padding: "13px 0",
+                    borderRadius: 12,
+                    background: canUncraft
+                      ? `linear-gradient(135deg, ${gemFrom}22, ${gemTo}44)`
+                      : "rgba(255,255,255,0.04)",
+                    border: canUncraft
+                      ? `1px solid ${gemFrom}66`
+                      : "1px solid rgba(255,255,255,0.08)",
+                    color: canUncraft ? gemFrom : C.faint,
+                    fontFamily: F.body,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: "0.06em",
+                    cursor: canUncraft ? "pointer" : "not-allowed",
+                    touchAction: "manipulation",
+                  }}
+                >
+                  Uncraft
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>

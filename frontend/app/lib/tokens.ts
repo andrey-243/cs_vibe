@@ -46,6 +46,8 @@ export function rarityChrome(tier: RarityTier) {
     bg: `linear-gradient(160deg, ${r.from} 0%, ${r.to} 100%)`,
     glow: r.glow,
     label: r.label,
+    from: r.from,
+    to: r.to,
   };
 }
 

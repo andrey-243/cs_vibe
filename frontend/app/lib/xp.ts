@@ -7,10 +7,15 @@ const XP_PER_TIER: Record<string, number> = {
   ICON: 60,
 };
 
+// Pack XP multipliers applied ON TOP of the streak multiplier (already in addXP)
+// daily/milestone: streak mult is the only driver — no extra fixed mult
+// ads: always ×1.2 on top (ads queue is always superior to daily)
+// major: ×1.5 fixed
 export const PACK_MULTIPLIER: Record<string, number> = {
-  daily: 1.0,
-  bonus: 1.2,
-  major: 1.5,
+  daily:     1.0,
+  milestone: 1.0,
+  ads:       1.2,
+  major:     1.5,
 };
 
 export function xpForTier(tier: string): number {
@@ -76,6 +81,8 @@ export const LEVELS: LevelDef[] = [
   { level: 41, name: "ESEA S",                 phase: "esea",   xpStart: 80000  },
 ];
 
+import { getStreakXPMultiplier } from "./streak";
+
 const LS_KEY = "csv-xp-total";
 
 export function getTotalXP(): number {
@@ -85,8 +92,9 @@ export function getTotalXP(): number {
 
 export function addXP(amount: number): void {
   if (typeof window === "undefined") return;
+  const mult = getStreakXPMultiplier();
   const current = getTotalXP();
-  localStorage.setItem(LS_KEY, String(current + amount));
+  localStorage.setItem(LS_KEY, String(current + Math.round(amount * mult)));
   window.dispatchEvent(new Event("csv-xp-updated"));
 }
 
