@@ -501,3 +501,25 @@ main {
 @keyframes csv-particle-3 { 0%{opacity:0;transform:translate(0,0) rotate(0deg);}  30%{opacity:1;} 100%{opacity:0;transform:translate(140px,120px) rotate(360deg);} }
 @keyframes csv-particle-4 { 0%{opacity:0;transform:translate(0,0) rotate(0deg);}  30%{opacity:1;} 100%{opacity:0;transform:translate(0,-200px) rotate(540deg);} }
 @keyframes csv-particle-5 { 0%{opacity:0;transform:translate(0,0) rotate(0deg);}  30%{opacity:1;} 100%{opacity:0;transform:translate(0,200px) rotate(-540deg);} }
+
+/* ── PACK DISPO badge ─────────────────────────────────────────────────── */
+@keyframes gem-pulse {
+  0%, 100% { box-shadow: 0 0 6px 1px var(--gem-color, #6db5c4), inset 0 0 4px rgba(255,255,255,0.08); opacity: 1; }
+  50%       { box-shadow: 0 0 14px 4px var(--gem-color, #6db5c4), inset 0 0 6px rgba(255,255,255,0.14); opacity: 0.88; }
+}
+
+.gem-pack-dispo {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--gem-color, #6db5c4) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gem-color, #6db5c4) 70%, transparent);
+  color: var(--gem-color, #6db5c4);
+  font-family: "Space Mono", ui-monospace, monospace;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px var(--gem-color, #6db5c4);
+  animation: gem-pulse 1.8s ease-in-out infinite;
+}

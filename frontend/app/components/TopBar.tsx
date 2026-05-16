@@ -5,16 +5,19 @@ import { C, F, GEM_COLORS } from "../lib/tokens";
 import XPBar from "./XPBar";
 import Gem from "./Gem";
 import { getTotalXP, getLevelInfo } from "../lib/xp";
+import { getGems } from "../lib/gems";
 
 const GEM_TIERS = Object.keys(GEM_COLORS) as string[];
 
-// Placeholder counts — remplacer par vraies données utilisateur quand auth dispo
-const GEM_COUNTS: Record<string, number> = {
-  TOP5: 0, TOP15: 0, TOP25: 0, TOP50: 0, TOP75: 0, TOP100: 0,
-};
-
 function GemsButton() {
   const [show, setShow] = useState(false);
+  const [counts, setCounts] = useState<Record<string, number>>(() => getGems());
+
+  useEffect(() => {
+    function sync() { setCounts(getGems()); }
+    window.addEventListener("csv-gems-updated", sync);
+    return () => window.removeEventListener("csv-gems-updated", sync);
+  }, []);
 
   return (
     <div
@@ -68,7 +71,7 @@ function GemsButton() {
                 {tier}
               </span>
               <span style={{ fontFamily: F.mono, fontSize: 10, fontWeight: 800, color: C.ink }}>
-                {GEM_COUNTS[tier] ?? 0}
+                {counts[tier] ?? 0}
               </span>
             </div>
           ))}

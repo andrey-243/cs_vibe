@@ -614,6 +614,7 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
         card={
           selected
             ? {
+                player_id: selected.player_id,
                 name: selected.name,
                 overall: selected.overall,
                 role: selected.role,
@@ -629,6 +630,7 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
             : null
         }
         tier={selected?.tier ?? "GOLD"}
+        ownedCount={selected ? (ownedCounts[selected.player_id] ?? 0) : 0}
         onClose={() => setSelected(null)}
       />
     </div>

@@ -52,8 +52,7 @@ export default function MiniCard({
   const hasStats = !!p?.categoryScores;
   const interactive = !!onClick;
   const numW = typeof w === "number" ? w : 84;
-  const triSize = count !== undefined && count > 1 ? 28 : 0;
-  const triFontSize = 7;
+  const badgeR = count !== undefined && count > 1 ? 18 : 0;
 
   return (
     <div
@@ -194,7 +193,7 @@ export default function MiniCard({
           style={{
             position: "absolute",
             left: 8,
-            right: triSize > 0 ? triSize + 2 : 8,
+            right: 8,
             bottom: 7,
           }}
         >
@@ -311,40 +310,41 @@ export default function MiniCard({
           </div>
         )}
 
-      </div>
-
-      {/* Count corner triangle — outside overflow:hidden so border-radius doesn't clip it */}
-      {triSize > 0 && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: 0,
-            right: 0,
-            width: triSize,
-            height: triSize,
-            background: `linear-gradient(135deg, transparent 50%, ${chrome.from} 50%)`,
-            zIndex: 8,
-            display: "flex",
-            alignItems: "flex-end",
-            justifyContent: "flex-end",
-            pointerEvents: "none",
-          }}
-        >
-          <span
+        {/* Count quarter-circle — inside overflow:hidden, card body clips it to corner */}
+        {badgeR > 0 && (
+          <div
             style={{
-              fontFamily: F.body,
-              fontSize: triFontSize,
-              fontWeight: 900,
-              color: "#fff",
-              padding: "0 3px 2px 0",
-              letterSpacing: "-0.01em",
-              textShadow: "0 1px 3px rgba(0,0,0,0.9)",
+              position: "absolute",
+              bottom: -badgeR,
+              right: -badgeR,
+              width: badgeR * 2,
+              height: badgeR * 2,
+              borderRadius: "50%",
+              background: `linear-gradient(135deg, ${chrome.from} 0%, ${chrome.to} 100%)`,
+              zIndex: 4,
+              pointerEvents: "none",
             }}
           >
-            ×{count}
-          </span>
-        </div>
-      )}
+            <span
+              style={{
+                position: "absolute",
+                top: Math.round(badgeR * 0.58),
+                left: Math.round(badgeR * 0.58),
+                fontFamily: F.body,
+                fontSize: Math.round(badgeR * 0.45),
+                fontWeight: 900,
+                color: "#fff",
+                lineHeight: 1,
+                letterSpacing: "-0.02em",
+                transform: "translate(-50%, -50%)",
+              }}
+            >
+              {count}
+            </span>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
