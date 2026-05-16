@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useMemo, useRef, useLayoutEffect } from "react";
+import { useState, useMemo, useRef, useLayoutEffect, useEffect } from "react";
+import { getOwnedIds } from "../lib/owned";
 import { C, F, R, RarityTier } from "../lib/tokens";
 import { CardDisplay } from "../lib/cards";
 import MiniCard from "../components/MiniCard";
@@ -321,11 +322,14 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
   const [selected, setSelected] = useState<CardDisplay | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Demo owned set: top 9 cards by overall (first 9 in sorted list)
-  const ownedIds = useMemo(
-    () => new Set(cards.slice(0, 9).map((c) => c.player_id)),
-    [cards]
-  );
+  const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const load = () => setOwnedIds(getOwnedIds());
+    load();
+    window.addEventListener("csv-owned-updated", load);
+    return () => window.removeEventListener("csv-owned-updated", load);
+  }, []);
 
   useLayoutEffect(() => {
     const el = containerRef.current;

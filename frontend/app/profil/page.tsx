@@ -1,8 +1,12 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { C, F, RarityTier } from "../lib/tokens";
 import TopBar from "../components/TopBar";
 import MiniCard from "../components/MiniCard";
 import XPBar from "../components/XPBar";
 import Gem from "../components/Gem";
+import { getTotalXP, getLevelInfo } from "../lib/xp";
 
 const GEMS = [
   { tier: "TOP5", amount: 0 },
@@ -16,8 +20,17 @@ const GEMS = [
 const SHOWCASE_SLOTS: (RarityTier | null)[] = [null, null, null, null, null];
 
 export default function ProfilPage() {
-  const xp = 0;
-  const xpNext = 100;
+  const [levelInfo, setLevelInfo] = useState(() => getLevelInfo(getTotalXP()));
+
+  useEffect(() => {
+    function sync() { setLevelInfo(getLevelInfo(getTotalXP())); }
+    window.addEventListener("csv-xp-updated", sync);
+    return () => window.removeEventListener("csv-xp-updated", sync);
+  }, []);
+
+  const { current, next, progressPct, totalXP } = levelInfo;
+  const xp = totalXP - current.xpStart;
+  const xpNext = next ? next.xpStart - current.xpStart : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", fontFamily: F.body, color: C.ink }}>
@@ -91,16 +104,16 @@ export default function ProfilPage() {
               flexShrink: 0,
             }}
           >
-            <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 800 }}>1</span>
+            <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 800 }}>{current.level}</span>
           </div>
           <div style={{ flex: 1 }}>
-            <XPBar pct={0} color="gold" height={8} />
+            <XPBar pct={progressPct} color="gold" height={8} />
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
               <div style={{ fontFamily: F.mono, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted }}>
-                {xp} / {xpNext} XP
+                {xp} / {xpNext > 0 ? xpNext : "MAX"} XP
               </div>
               <div style={{ fontFamily: F.mono, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: C.gold }}>
-                → Silver I
+                {next ? `→ ${next.name}` : "MAX RANK"}
               </div>
             </div>
           </div>

@@ -4,6 +4,9 @@ import { C, F, rarityChrome } from "./lib/tokens";
 import type { RarityTier } from "./lib/tokens";
 import TopBar from "./components/TopBar";
 import XPBar from "./components/XPBar";
+import PackOpenModal, { type RevealCard } from "./components/PackOpenModal";
+import { addOwnedIds } from "./lib/owned";
+import { addXP, calcPackXP, PACK_MULTIPLIER } from "./lib/xp";
 
 type PackType = "daily" | "bonus";
 
@@ -66,6 +69,7 @@ const CHALLENGES = [
   { label: "Compléter 1 trade", xp: "+15 XP", done: false, pct: 0 },
 ];
 
+
 export default function PackPage() {
   const [now, setNow] = useState(() => Date.now());
   const [queue, setQueue] = useState<QueuedPack[]>(() => [
@@ -73,6 +77,9 @@ export default function PackPage() {
   ]);
   const [bonusNextAt, setBonusNextAt] = useState(0);
   const [dailyNextAt, setDailyNextAt] = useState(0);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [activePack, setActivePack] = useState<QueuedPack | null>(null);
+  const [packCards, setPackCards] = useState<RevealCard[]>([]);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -87,10 +94,48 @@ export default function PackPage() {
     );
   }
 
-  function openPack(id: string) {
+  async function openPack(id: string) {
     const pack = queue.find((p) => p.id === id);
-    if (pack?.type === "daily") setDailyNextAt(now + 12 * 3600 * 1000);
-    setQueue((q) => q.filter((p) => p.id !== id));
+    if (!pack) return;
+    setActivePack(pack);
+
+    let cards: RevealCard[] = [];
+    try {
+      const res = await fetch("/api/pack-open");
+      if (res.ok) {
+        const data = await res.json();
+        cards = data.map((c: { player_id: string; name: string; overall: number; tier: string; role: string; teamShort: string; nationality: string; image_offset?: string; category_scores?: { firepower: number; opening: number; clutching: number; entrying: number; trading: number; impact: number } }) => ({
+          player_id: c.player_id,
+          name: c.name,
+          ovr: c.overall,
+          tier: c.tier,
+          role: c.role,
+          teamShort: c.teamShort,
+          nationality: c.nationality,
+          image_offset: c.image_offset,
+          categoryScores: c.category_scores,
+        }));
+      }
+    } catch {
+      // fallback to a simple placeholder if API fails
+      cards = [
+        { tier: "SILVER", ovr: 50, name: "?" },
+        { tier: "SILVER", ovr: 50, name: "?" },
+        { tier: "SILVER", ovr: 50, name: "?" },
+        { tier: "SILVER", ovr: 50, name: "?" },
+        { tier: "SILVER", ovr: 50, name: "?" },
+      ];
+    }
+
+    setPackCards(cards);
+    setModalOpen(true);
+  }
+
+  function handleModalClose() {
+    if (activePack?.type === "daily") setDailyNextAt(now + 12 * 3600 * 1000);
+    setQueue((q) => q.filter((p) => p.id !== activePack?.id));
+    setModalOpen(false);
+    setActivePack(null);
   }
 
   function addBonusPack() {
@@ -109,6 +154,21 @@ export default function PackPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", fontFamily: F.body, color: C.ink }}>
+      <PackOpenModal
+        open={modalOpen}
+        packLabel={activePack?.type === "daily" ? "DAILY" : "BONUS"}
+        cards={packCards}
+        onClose={handleModalClose}
+        packMultiplier={PACK_MULTIPLIER[activePack?.type ?? "daily"]}
+        onCardsRevealed={(revealed) => {
+          const ids = revealed.map((c) => c.player_id).filter(Boolean) as string[];
+          if (ids.length) addOwnedIds(ids);
+          const mult = PACK_MULTIPLIER[activePack?.type ?? "daily"];
+          const earned = calcPackXP(revealed.map((c) => c.tier), mult);
+          if (earned > 0) addXP(earned);
+        }}
+      />
+
       <TopBar />
 
       {/* File d'attente */}

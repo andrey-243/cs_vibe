@@ -68,3 +68,436 @@ main {
   max-height: 220px !important;
   overflow-y: auto !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CS Vibe — Pack & Wheel reveal animations
+   All classes prefixed with csv- to avoid collisions.
+   ═══════════════════════════════════════════════════════════════════ */
+
+.csv-root,
+.csv-wheel,
+.csv-pack {
+  --csv-gold: #ffd23f;
+  --csv-gold-dk: #b8901a;
+  --csv-crimson: #b85060;
+  --csv-teal: #6db5c4;
+  --csv-bg-1: #08051c;
+  --csv-bg-2: #1a0a3a;
+  --csv-mono: "Space Mono", ui-monospace, monospace;
+  --csv-display: "Manrope", -apple-system, system-ui, sans-serif;
+  color: #fff;
+}
+
+/* ════ TILE ════ */
+.csv-tile {
+  position: relative;
+  width: 64px;
+  height: 94px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: linear-gradient(160deg, var(--from), var(--to));
+  border: 1.5px solid rgba(255, 255, 255, 0.22);
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.5),
+    0 0 8px var(--glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+}
+
+.csv-tile-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 35%, rgba(255, 255, 255, 0.18) 50%, transparent 65%);
+  pointer-events: none;
+}
+
+.csv-tile-ovr {
+  font-family: var(--csv-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  line-height: 0.85;
+  letter-spacing: -0.04em;
+  position: relative;
+}
+
+.csv-tile-tier {
+  font-family: var(--csv-mono);
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--label);
+  opacity: 0.92;
+  position: relative;
+}
+
+.csv-tile-name {
+  font-family: var(--csv-display);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  position: relative;
+}
+
+.csv-tile--target {
+  width: 96px;
+  height: 140px;
+  border-color: #fff;
+  padding: 8px;
+  box-shadow:
+    0 0 36px var(--glow),
+    0 0 14px rgba(255, 255, 255, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.csv-tile--target .csv-tile-ovr { font-size: 32px; }
+.csv-tile--target .csv-tile-tier { font-size: 8.5px; }
+
+/* ── Card flip reveal ── */
+@keyframes csv-flip-in {
+  0%   { transform: perspective(800px) rotateY(-90deg) translateY(40px); opacity: 0; }
+  30%  { opacity: 1; }
+  85%  { transform: perspective(800px) rotateY(6deg) translateY(-5px); }
+  100% { transform: perspective(800px) rotateY(0deg) translateY(0px); opacity: 1; }
+}
+
+@keyframes csv-sheen-sweep {
+  0%   { left: -80%; opacity: 0; }
+  20%  { opacity: 1; }
+  100% { left: 130%; opacity: 0; }
+}
+
+.csv-flip-card {
+  animation: csv-flip-in 620ms cubic-bezier(0.2, 0.85, 0.3, 1) forwards;
+}
+
+.csv-flip-sheen {
+  animation: csv-sheen-sweep 900ms ease-out 400ms forwards;
+}
+
+.csv-tile--winner {
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 0 36px var(--glow),
+    0 0 14px rgba(255, 255, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.csv-tile--landed {
+  animation: csv-land-flash 700ms ease-out;
+}
+
+@keyframes csv-land-flash {
+  0%   { transform: scale(1); }
+  25%  { transform: scale(1.08); box-shadow: 0 0 50px var(--glow), 0 0 30px #fff, inset 0 1px 0 rgba(255,255,255,0.6); }
+  100% { transform: scale(1); }
+}
+
+/* ════ WHEEL ════ */
+.csv-wheel {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  height: 220px;
+  margin: 0 auto;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(240, 171, 252, 0.18) 0%, transparent 55%),
+    linear-gradient(180deg, var(--csv-bg-1) 0%, var(--csv-bg-2) 100%);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.csv-wheel-pointer {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 14px solid var(--csv-gold);
+  filter: drop-shadow(0 0 8px var(--csv-gold));
+  z-index: 4;
+}
+
+.csv-wheel-spotlight {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  left: calc(50% - 50px);
+  width: 100px;
+  background: radial-gradient(ellipse, rgba(255, 210, 63, 0.18) 0%, transparent 70%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.csv-wheel-spotlight::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  background: linear-gradient(180deg, var(--csv-gold) 0%, transparent 100%);
+  opacity: 0.4;
+}
+
+.csv-wheel-mask {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, var(--csv-bg-1) 0%, transparent 12%, transparent 88%, var(--csv-bg-1) 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.csv-wheel-strip {
+  position: absolute;
+  top: 40px;
+  left: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 50%;
+  height: 140px;
+  will-change: transform;
+  z-index: 2;
+}
+
+.csv-wheel-meter {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  bottom: 12px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  z-index: 4;
+}
+
+.csv-wheel-meter-fill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--csv-teal) 0%, var(--csv-gold) 60%, var(--csv-crimson) 100%);
+  box-shadow: 0 0 10px var(--csv-gold);
+}
+
+.csv-wheel-label {
+  position: absolute;
+  top: 14px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--csv-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.55);
+  z-index: 4;
+}
+
+/* ════ PACK ════ */
+.csv-pack {
+  position: relative;
+  width: 280px;
+  height: 380px;
+  margin: 0 auto;
+}
+
+.csv-pack-top,
+.csv-pack-bottom {
+  position: absolute;
+  left: 50%;
+  width: 180px;
+  border: 1.5px solid rgba(255, 255, 255, 0.2);
+  overflow: hidden;
+  z-index: 2;
+}
+
+.csv-pack-top {
+  top: 40px;
+  height: 150px;
+  transform: translateX(-50%);
+  border-radius: 12px 12px 4px 4px;
+  background: linear-gradient(180deg, #2a1652 0%, #1a0f3a 100%);
+  box-shadow: 0 -6px 14px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.csv-pack-bottom {
+  bottom: 40px;
+  height: 130px;
+  transform: translateX(-50%);
+  border-radius: 4px 4px 12px 12px;
+  background: linear-gradient(180deg, #1a0f3a 0%, #0d0820 100%);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.csv-pack-top::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: repeating-linear-gradient(90deg, rgba(255, 210, 63, 0.6) 0px, rgba(255, 210, 63, 0.6) 8px, transparent 8px, transparent 14px);
+}
+
+.csv-pack-bottom::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: repeating-linear-gradient(90deg, rgba(255, 210, 63, 0.6) 0px, rgba(255, 210, 63, 0.6) 8px, transparent 8px, transparent 14px);
+}
+
+.csv-pack-top-label {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--csv-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.18em;
+}
+
+.csv-pack-burst {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80px;
+  height: 80px;
+  margin: -40px 0 0 -40px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, var(--csv-gold) 30%, transparent 70%);
+  filter: blur(2px);
+  box-shadow: 0 0 60px var(--csv-gold), 0 0 120px var(--csv-crimson);
+  opacity: 0;
+  transform: scale(0.2);
+  z-index: 5;
+}
+
+.csv-pack-rays {
+  position: absolute;
+  inset: -40px;
+  background: conic-gradient(from 0deg at 50% 50%,
+    transparent 0deg, rgba(255, 210, 63, 0.18) 15deg, transparent 30deg,
+    rgba(255, 210, 63, 0.18) 60deg, transparent 75deg,
+    rgba(255, 210, 63, 0.18) 105deg, transparent 120deg,
+    rgba(255, 210, 63, 0.18) 150deg, transparent 165deg,
+    rgba(255, 210, 63, 0.18) 195deg, transparent 210deg,
+    rgba(255, 210, 63, 0.18) 240deg, transparent 255deg,
+    rgba(255, 210, 63, 0.18) 285deg, transparent 300deg,
+    rgba(255, 210, 63, 0.18) 330deg, transparent 360deg);
+  mix-blend-mode: screen;
+  filter: blur(2px);
+  opacity: 0;
+  z-index: 1;
+}
+
+.csv-pack-card {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(0deg) scale(0.4);
+  opacity: 0;
+  z-index: 4;
+}
+
+.csv-pack-particle {
+  position: absolute;
+  width: 12px;
+  height: 7px;
+  background: linear-gradient(135deg, var(--csv-gold), var(--csv-gold-dk));
+  opacity: 0;
+  z-index: 3;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.csv-pack-particle:nth-child(odd) {
+  background: linear-gradient(135deg, var(--csv-crimson), #6b0a3d);
+}
+
+/* Opening sequence */
+.csv-pack--opening .csv-pack-top      { animation: csv-pack-top-fly 1100ms cubic-bezier(0.25, 0.8, 0.3, 1) forwards; animation-delay: 200ms; }
+.csv-pack--opening .csv-pack-bottom   { animation: csv-pack-bot-fly 1100ms cubic-bezier(0.25, 0.8, 0.3, 1) forwards; animation-delay: 200ms; }
+.csv-pack--opening .csv-pack-burst    { animation: csv-burst 1400ms ease-out forwards; animation-delay: 100ms; }
+.csv-pack--opening .csv-pack-rays     { animation: csv-rays 2000ms ease-out forwards; animation-delay: 100ms; }
+.csv-pack--opening .csv-pack-card     { animation: csv-card-burst 900ms cubic-bezier(0.2, 0.9, 0.3, 1) forwards; animation-delay: 600ms; }
+.csv-pack--opening .csv-pack-particle { animation: csv-particle 1200ms ease-out forwards; animation-delay: 300ms; }
+
+.csv-pack--shaking .csv-pack-top,
+.csv-pack--shaking .csv-pack-bottom {
+  animation: csv-shake 400ms ease-in-out;
+}
+
+@keyframes csv-shake {
+  0%, 100% { transform: translateX(-50%); }
+  20%      { transform: translateX(calc(-50% - 4px)); }
+  40%      { transform: translateX(calc(-50% + 4px)); }
+  60%      { transform: translateX(calc(-50% - 3px)); }
+  80%      { transform: translateX(calc(-50% + 3px)); }
+}
+
+@keyframes csv-pack-top-fly {
+  0%   { transform: translateX(-50%) translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(-260px) rotate(-22deg); opacity: 0; }
+}
+
+@keyframes csv-pack-bot-fly {
+  0%   { transform: translateX(-50%) translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateX(-50%) translateY(220px) rotate(14deg); opacity: 0; }
+}
+
+@keyframes csv-burst {
+  0%   { opacity: 0; transform: scale(0.2); }
+  20%  { opacity: 1; transform: scale(1.6); }
+  60%  { opacity: 0.9; transform: scale(2.6); }
+  100% { opacity: 0; transform: scale(3.4); }
+}
+
+@keyframes csv-rays {
+  0%   { opacity: 0; transform: rotate(0deg) scale(0.7); }
+  30%  { opacity: 1; }
+  100% { opacity: 0.2; transform: rotate(40deg) scale(1.4); }
+}
+
+@keyframes csv-card-burst {
+  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(0deg) scale(0.3); }
+  60%  { opacity: 1; transform: translate(-50%, -50%) rotate(calc(var(--rot) * 1.2)) scale(1.1); }
+  100% { opacity: 1; transform: translate(-50%, -50%) rotate(var(--rot)) scale(1); }
+}
+
+.csv-pack-particle-0 { top: 30%; left: 30%; }
+.csv-pack-particle-1 { top: 30%; right: 30%; }
+.csv-pack-particle-2 { top: 50%; left: 20%; }
+.csv-pack-particle-3 { top: 60%; right: 20%; }
+.csv-pack-particle-4 { top: 25%; left: 50%; }
+.csv-pack-particle-5 { top: 70%; left: 50%; }
+
+.csv-pack--opening .csv-pack-particle-0 { animation: csv-particle-0 1400ms ease-out forwards; animation-delay: 300ms; }
+.csv-pack--opening .csv-pack-particle-1 { animation: csv-particle-1 1400ms ease-out forwards; animation-delay: 300ms; }
+.csv-pack--opening .csv-pack-particle-2 { animation: csv-particle-2 1400ms ease-out forwards; animation-delay: 350ms; }
+.csv-pack--opening .csv-pack-particle-3 { animation: csv-particle-3 1400ms ease-out forwards; animation-delay: 350ms; }
+.csv-pack--opening .csv-pack-particle-4 { animation: csv-particle-4 1400ms ease-out forwards; animation-delay: 250ms; }
+.csv-pack--opening .csv-pack-particle-5 { animation: csv-particle-5 1400ms ease-out forwards; animation-delay: 400ms; }
+
+@keyframes csv-particle-0 { 0%{opacity:0;transform:translate(0,0) rotate(0deg);}  30%{opacity:1;} 100%{opacity:0;transform:translate(-120px,-160px) rotate(-360deg);} }
+@keyframes csv-particle-1 { 0%{opacity:0;transform:translate(0,0) rotate(0deg);}  30%{opacity:1;} 100%{opacity:0;transform:translate(120px,-180px) rotate(420deg);} }
+@keyframes csv-particle-2 { 0%{opacity:0;transform:translate(0,0) rotate(0deg);}  30%{opacity:1;} 100%{opacity:0;transform:translate(-150px,100px) rotate(-300deg);} }
+@keyframes csv-particle-3 { 0%{opacity:0;transform:translate(0,0) rotate(0deg);}  30%{opacity:1;} 100%{opacity:0;transform:translate(140px,120px) rotate(360deg);} }
+@keyframes csv-particle-4 { 0%{opacity:0;transform:translate(0,0) rotate(0deg);}  30%{opacity:1;} 100%{opacity:0;transform:translate(0,-200px) rotate(540deg);} }
+@keyframes csv-particle-5 { 0%{opacity:0;transform:translate(0,0) rotate(0deg);}  30%{opacity:1;} 100%{opacity:0;transform:translate(0,200px) rotate(-540deg);} }

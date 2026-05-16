@@ -295,6 +295,91 @@ Reprise automatique si interrompue grâce à `players_progress.json`
 - Fonts : Manrope (display/body) + Space Mono (mono) via Google Fonts
 - Build propre, zéro erreur TypeScript
 
+### Pack opening — animation complète
+Séquence en 3 phases déclenchée par "Ouvrir →" sur un pack prêt.
+
+**Phase 1 — ouverture du pack (2.4s)**
+- Pack shake (anticipation 400ms) → déchirement (top fly -260px rotate -22° / bottom fly +220px rotate 14°)
+- Burst de lumière + rayons conic-gradient + 6 particules qui s'échappent
+- 5 cartes en éventail jaillissent depuis le centre
+
+**Phase 2 — roue × 5 cartes (6.5s/carte)**
+- Roulette horizontale style CS:GO case opening — strip de ~85 tiles défile
+- Toutes les tiles sont identiques pendant le spin (même taille 64×94, pas de nom) → pas de spoiler
+- Décélération cubic-bezier(0.05, 0.85, 0.08, 1) avec jitter final ±12px
+- Sons Web Audio synthétisés : ticks métalliques qui ralentissent + volume qui monte progressivement (quasi silencieux au démarrage → punchy à l'atterrissage) + landing par rareté (thud basique Bronze → chord majeur + cascade cloches ICON)
+- 350ms après l'atterrissage : `csv-tile--winner` (glow fort + nom révélé) + flash de landing
+
+**Phase 3 — flip reveal (par carte, auto-avancement)**
+- La carte apparaît en grand (200×295px) avec animation rotateY(-90deg → 0deg) + léger overshoot à 6° + translateY(40px → 0)
+- Sweep de sheen traverse la carte après le flip
+- Affiche : photo full-bleed, overall (34px), rôle, drapeau, nom, teamShort
+- **Pas de bouton** — auto-avancement après 1800ms (550ms flip + ~1250ms de visualisation)
+- Après toutes les cartes : écran récap centré + "CONTINUER"
+
+**Phase 4 — récap centré**
+- Grille 3+2 de `RecapCard` (photo cards ~120px de large) centrée verticalement sur l'écran
+- Le stage et le compteur sont démontés pendant le récap (pas d'espace mort qui décale le contenu)
+- Chaque carte est **cliquable** → ouvre `CardDetailModal` (z-index 500, au-dessus du modal pack à 400)
+- `CardDetailModal` reçoit `categoryScores` depuis la carte → stats FIR/OPN/CLU/ENT/TRD/IMP affichées
+
+**Fichiers clés :**
+- `app/lib/reveal.ts` — moteur d'animation. Exports : `openPack`, `spinWheel`, `playLanding`, `reset`, `RARITY`. Web Audio API, safe SSR.
+- `app/components/PackOpenModal.tsx` — orchestrateur React. Props : `open`, `packLabel`, `cards: RevealCard[]`, `onClose`, `onCardsRevealed`. Gère l'état `selectedCard` pour le modal détail.
+- `app/api/pack-open/route.ts` — tire 5 cartes depuis `players_cards.json` avec distribution pondérée par rareté (Bronze 21% / Silver 38% / Gold 31% / Diamond 10% / Icon <1%). Retourne `category_scores` dans la réponse.
+- Classes CSS `csv-*` dans `globals.css` (animations pack, wheel, flip)
+
+**Interface `RevealCard` :**
+```ts
+{ tier, ovr, name, player_id, role, teamShort, nationality, image_offset, categoryScores? }
+```
+`categoryScores` = `{ firepower, opening, clutching, entrying, trading, impact }` — passé depuis l'API et transmis à `CardDetailModal` via `revealCardToPortrait()`.
+
+---
+
+### Son des ticks — état de l'art (mai 2026)
+
+**Référence cible :** `CSGO Case Opening Sound Effect.wav` (téléchargé dans Downloads)
+
+**Analyse WAV faite :**
+- 16s, 149 impacts détectés
+- Les 2 premiers impacts (340ms chacun) = sons d'ouverture, pas des ticks
+- Les vrais ticks : durée 1–60ms selon la vitesse de la roue
+- Spectral analysis polluée par une nappe 300Hz continue dans tout le fichier → mesures peu fiables pour reproduire le tick isolé
+- Le tick a bien **2 sons distincts** (confirmé à l'oreille) : un click haut + un impact secondaire décalé ~9ms
+
+**Ce qui a été essayé (avec feedback) :**
+
+| Approche | Feedback |
+|---|---|
+| Triangle oscillator + sweep freq 1850→900Hz, 45ms | "clack" trop prononcé |
+| Bandpass noise inharmonique (Q=3, 2800Hz) | "boisé, pas assez métallique" |
+| Résonateurs inharmoniques (Q=9–14, ratios 1/1.73/2.96, 3200Hz) + compresseur | "pétard" |
+| Sinus inharmoniques (sans compresseur, Q modéré) | mieux, mais "faible + boisé" |
+| Sinus purs (1.0/1.73) + pitch drop à l'onset + transient HP noise | "plastique/osseux, trop d'écho" |
+| Corps 300–480Hz (basé sur analyse WAV) + click 4kHz | "cartonneux" |
+| 3 layers : transient broadband 400Hz–8kHz + sine 1500–2000Hz + 4kHz click, tout < 10ms | "pot d'échappement" |
+| Même mais HP monté à 1500Hz (coupe le bas) + 4kHz boosté à 85% | "toujours pas assez aigu/métallique" |
+
+**État actuel (`reveal.ts` · `scheduleTick`) :**
+- 3 composants : transient 3ms (HP 1500Hz) + sine 8ms (2400→1700Hz selon drama) + bandpass 4kHz 4ms
+- Volume : rampe de 0.5 à 1.4 au fil du ralentissement (quasi silencieux au start = agréable)
+- Gap minimum entre ticks : 18ms
+- Le rythme est reconnaissable ✅ — le timbre reste trop peu métallique ❌
+
+**Piste non explorée — à implémenter :**
+Lecture directe du WAV via `AudioBufferSourceNode.start(when, offset, duration)` :
+- Pre-load `fetch('/sounds/csgo-tick.wav')` → `decodeAudioData` au premier pack ouvert
+- Jouer offset précis dans le buffer pour chaque tick (~1360ms dans le WAV original, impact 8 — 96ms de silence avant)
+- `playbackRate` variable pour le drama effect (fast ticks = rate 1.0, slow = rate 0.85)
+- Garantit un son identique au WAV, zero approximation de synthèse
+- Fichier extrait déjà présent : `frontend/public/sounds/csgo-tick.wav` (47ms, 8KB)
+
+### Collection — cartes possédées (localStorage)
+- `app/lib/owned.ts` — store client : `getOwnedIds()` / `addOwnedIds(ids[])` / `clearOwned()`
+- Après chaque pack ouvert : `addOwnedIds` persiste les `player_id` en localStorage + dispatche `window Event("csv-owned-updated")`
+- `CollectionGrid` écoute cet event → `setOwnedIds(getOwnedIds())` → "Mes cartes" se met à jour en temps réel sans reload
+
 ### Flag.tsx
 Composant drapeau wrappant `flag-icons`. Props : `code` (ISO-2), `width` (défaut 18), `rounded` (défaut true). Render via `className="fi fi-{code}"` + sizing inline. Fallback `null` si code absent. `flag-icons` importé dans `layout.tsx`. Utiliser ce composant — pas de `<span>` inline direct.
 
@@ -611,16 +696,75 @@ Craft pack gems — selon tier   →  TOP100: 20 / TOP75: 30 / TOP50: 45
                                    TOP25: 65 / TOP15: 85 / TOP5: 120
 ```
 
-### Courbe XP exponentielle
+### Courbe XP — seuils implémentés (41 niveaux)
 
+Calibration : Silver I–III atteignables en ~1 semaine casual (~305 XP/sem), puis ralentissement progressif.
+
+**XP moyen par pack (distribution réelle) :**
 ```
-Silver I        →    100 XP
-...
-Global Elite    →  5 000 XP
-...
-ESEA S          → 20 000 XP
+E[XP/carte] = 0.21×1 + 0.38×2 + 0.31×5 + 0.095×12 + 0.005×60 ≈ 3.96 XP
+Daily pack  (×1.0) → ~20 XP/pack
+Bonus pack  (×1.2) → ~24 XP/pack
 ```
-Chaque niveau suivant coûte significativement plus que le précédent.
+
+**Débit par profil (packs/semaine) :**
+```
+Casual  (1 session/jour) → 7 daily + 7 bonus  ≈  305 XP/semaine
+Optimal (dès que prêt)   → 14 daily + 28 bonus ≈  940 XP/semaine
+```
+
+**Phase 1 — CS2 (niveaux 1–18) :**
+```
+1  Silver I               →     0 XP   (J1)
+2  Silver II              →    60 XP   (J1-2 casual)
+3  Silver III             →   150 XP   (J3-4 casual)
+4  Silver IV              →   280 XP   (J6 casual — fin semaine 1)
+5  Silver Elite           →   450 XP
+6  Silver Elite Master    →   660 XP
+7  Gold Nova I            →   920 XP
+8  Gold Nova II           → 1 230 XP
+9  Gold Nova III          → 1 600 XP
+10 Gold Nova Master       → 2 030 XP
+11 Master Guardian I      → 2 520 XP
+12 Master Guardian II     → 3 060 XP
+13 Master Guardian Elite  → 3 640 XP
+14 Distinguished MG       → 4 180 XP
+15 Legendary Eagle        → 4 550 XP
+16 Legendary Eagle Master → 4 780 XP
+17 Supreme MFC            → 4 910 XP
+18 Global Elite           → 5 000 XP   (~16 sem casual / ~5 sem optimal)
+```
+
+**Phase 2 — Faceit (niveaux 19–28) :**
+```
+19 Faceit 1  →  5 500 XP
+20 Faceit 2  →  6 100 XP
+21 Faceit 3  →  6 800 XP
+22 Faceit 4  →  7 600 XP
+23 Faceit 5  →  8 500 XP
+24 Faceit 6  →  9 500 XP
+25 Faceit 7  → 10 600 XP
+26 Faceit 8  → 11 800 XP
+27 Faceit 9  → 13 100 XP
+28 Faceit 10 → 14 500 XP
+```
+
+**Phase 3 — ESEA (niveaux 29–41) :**
+```
+29 ESEA D-  → 15 100 XP
+30 ESEA D   → 15 750 XP
+31 ESEA D+  → 16 450 XP
+32 ESEA C-  → 17 000 XP
+33 ESEA C   → 17 500 XP
+34 ESEA C+  → 17 950 XP
+35 ESEA B-  → 18 350 XP
+36 ESEA B   → 18 700 XP
+37 ESEA B+  → 19 000 XP
+38 ESEA A-  → 19 250 XP
+39 ESEA A   → 19 500 XP
+40 ESEA A+  → 19 750 XP
+41 ESEA S   → 20 000 XP   (~65 sem casual / ~21 sem optimal)
+```
 
 ### Récompenses par palier
 *(à équilibrer — grandes lignes)*
@@ -1080,7 +1224,7 @@ python main.py --refresh
 - [x] Collection — données réelles, filtres Rarity/Role/Team/PAYS (loot pool), pagination, modal détail
 - [x] MiniCards — photo full-bleed, halo rareté, Flag CSS, imageOffset (photo_focus)
 - [x] Pack queue + timers — file d'attente (max 2), countdown live, skip pub, CTA bonus
-- [ ] Pack opening animation — révélation des 5 cartes une par une
+- [x] Pack opening animation — pack shake + tear + burst → roue × 5 + flip reveal → récap + persist localStorage
 - [ ] Système de level + XP
 - [ ] Trade want/have market
 - [ ] Intégration ads

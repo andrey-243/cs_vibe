@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C, F, GEM_COLORS } from "../lib/tokens";
 import XPBar from "./XPBar";
 import Gem from "./Gem";
+import { getTotalXP, getLevelInfo } from "../lib/xp";
 
 const GEM_TIERS = Object.keys(GEM_COLORS) as string[];
 
@@ -78,6 +79,18 @@ function GemsButton() {
 }
 
 export default function TopBar({ major = false }: { major?: boolean }) {
+  const [levelInfo, setLevelInfo] = useState(() => getLevelInfo(getTotalXP()));
+
+  useEffect(() => {
+    function sync() {
+      setLevelInfo(getLevelInfo(getTotalXP()));
+    }
+    window.addEventListener("csv-xp-updated", sync);
+    return () => window.removeEventListener("csv-xp-updated", sync);
+  }, []);
+
+  const { current, progressPct } = levelInfo;
+
   return (
     <div
       style={{
@@ -91,9 +104,9 @@ export default function TopBar({ major = false }: { major?: boolean }) {
       <div
         style={{
           display: "inline-flex",
+          flexDirection: "column",
           alignItems: "center",
           fontFamily: F.body,
-          fontSize: 9,
           fontWeight: 700,
           background: "rgba(255,210,63,0.15)",
           color: C.gold,
@@ -102,14 +115,16 @@ export default function TopBar({ major = false }: { major?: boolean }) {
           border: `1px solid ${C.border}`,
           letterSpacing: "0.04em",
           flexShrink: 0,
+          lineHeight: 1,
         }}
       >
-        LVL 23
+        <span style={{ fontSize: 8, opacity: 0.7 }}>LVL {current.level}</span>
+        <span style={{ fontSize: 8, marginTop: 1 }}>{current.name}</span>
       </div>
 
       {/* XP bar */}
       <div style={{ flex: 1 }}>
-        <XPBar pct={64} color={major ? "crimson" : "gold"} height={5} />
+        <XPBar pct={progressPct} color={major ? "crimson" : "gold"} height={5} />
       </div>
 
       {/* Gems */}
