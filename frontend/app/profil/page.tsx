@@ -1,14 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { C, F, RarityTier } from "../lib/tokens";
+import { C, F, RarityTier, GEM_COLORS, GEM_PARTY_NAMES, GEM_PACK_NAMES } from "../lib/tokens";
 import TopBar from "../components/TopBar";
 import MiniCard from "../components/MiniCard";
 import XPBar from "../components/XPBar";
 import Gem from "../components/Gem";
 import { getTotalXP, getLevelInfo } from "../lib/xp";
 import { getGems, addGems, removeGems } from "../lib/gems";
-import { GEM_COLORS } from "../lib/tokens";
 
 const GEM_TIERS = ["TOP5", "TOP15", "TOP25", "TOP50", "TOP75", "TOP100"] as const;
 const CRAFT_THRESHOLD = 250;
@@ -201,8 +200,13 @@ export default function ProfilPage() {
                 }}
               >
                 <Gem tier={tier} size={14} />
-                <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 700, letterSpacing: "0.06em", width: 56 }}>
-                  {tier}
+                <div style={{ display: "flex", flexDirection: "column", width: 112 }}>
+                  <span style={{ fontFamily: F.body, fontSize: 11, fontWeight: 800, letterSpacing: "0.04em", color: C.ink }}>
+                    {GEM_PACK_NAMES[tier] ?? tier}
+                  </span>
+                  <span style={{ fontFamily: F.mono, fontSize: 8, letterSpacing: "0.08em", color: C.faint, marginTop: 1 }}>
+                    {GEM_PARTY_NAMES[tier] ?? tier}
+                  </span>
                 </div>
                 {ready ? (
                   <div style={{ flex: 1, display: "flex", justifyContent: "center", alignItems: "center" }}>

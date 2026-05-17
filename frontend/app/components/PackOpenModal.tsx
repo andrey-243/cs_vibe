@@ -2,11 +2,14 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { openPack, spinWheel, reset, RARITY, preloadTickBuffer, type RevealCard } from "../lib/reveal";
-import { F, C, type RarityTier } from "../lib/tokens";
+import { F, C, GEM_PACK_NAMES, type RarityTier } from "../lib/tokens";
 import { calcPackXP } from "../lib/xp";
 import Flag from "./Flag";
 import CardDetailModal from "./CardDetailModal";
 import { type CardPortraitData } from "./CardPortrait";
+import { removeOwnedId } from "../lib/owned";
+import { addGems } from "../lib/gems";
+import { onCardsDecrafted } from "../lib/challenges";
 
 export type { RevealCard };
 
@@ -41,6 +44,44 @@ function delay(ms: number) {
 const ROLE_FULL: Record<string, string> = {
   AWP: "AWPer", IGL: "IGL", RIF: "Rifler",
   ENT: "Entry", SUP: "Support", LRK: "Lurker",
+};
+
+const GEM_BY_RARITY: Record<string, number> = {
+  BRONZE: 5, SILVER: 12, GOLD: 30, DIAMOND: 75, ICON: 400, LEGACY: 30,
+};
+
+const TIER_ORDER = ["BRONZE", "SILVER", "GOLD", "DIAMOND", "ICON"] as const;
+type TierKey = (typeof TIER_ORDER)[number];
+
+const GEM_TIER_ORDER = ["TOP5", "TOP15", "TOP25", "TOP50", "TOP75", "TOP100"];
+
+const GEM_TIER_CLR: Record<string, string> = {
+  TOP5: "#f5d76e", TOP15: "#c77dff", TOP25: "#4cc9f0",
+  TOP50: "#56d6a4", TOP75: "#80e0b0", TOP100: "#8fa3ad",
+};
+
+function gemTierFromRank(teamRank?: number): string {
+  if (!teamRank) return "TOP100";
+  if (teamRank <= 5) return "TOP5";
+  if (teamRank <= 15) return "TOP15";
+  if (teamRank <= 25) return "TOP25";
+  if (teamRank <= 50) return "TOP50";
+  if (teamRank <= 75) return "TOP75";
+  return "TOP100";
+}
+
+function calcGemsForCards(cards: RevealCard[]): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const c of cards) {
+    const gt = gemTierFromRank(c.teamRank);
+    const amt = GEM_BY_RARITY[c.tier] ?? 5;
+    result[gt] = (result[gt] ?? 0) + amt;
+  }
+  return result;
+}
+
+const TIER_ABBR: Record<string, string> = {
+  BRONZE: "BRZ", SILVER: "SLV", GOLD: "GLD", DIAMOND: "DIA", ICON: "ICN",
 };
 
 function revealCardToPortrait(card: RevealCard): CardPortraitData {
@@ -176,9 +217,9 @@ function FlipCard({ card }: { card: RevealCard }) {
           <div style={{ fontFamily: F.body, fontSize: 18, fontWeight: 800, color: "#fff", letterSpacing: "-0.01em", textShadow: "0 1px 4px rgba(0,0,0,0.8)" }}>
             {card.name ?? "?"}
           </div>
-          {card.teamShort && (
+          {(card.team ?? card.teamShort) && (
             <div style={{ fontFamily: F.mono, fontSize: 8, letterSpacing: "0.1em", color: "rgba(255,255,255,0.55)", marginTop: 3 }}>
-              {card.teamShort}
+              {card.team ?? card.teamShort}
             </div>
           )}
         </div>
@@ -282,6 +323,8 @@ export default function PackOpenModal({
   const [revealingCard, setRevealingCard] = useState<RevealCard | null>(null);
   const [selectedCard, setSelectedCard] = useState<RevealCard | null>(null);
   const cancelledRef = useRef(false);
+  const [preview, setPreview] = useState<{ cards: RevealCard[]; gems: Record<string, number>; label: string } | null>(null);
+  const [rarityExpanded, setRarityExpanded] = useState(false);
 
   const runSequence = useCallback(async () => {
     const container = stageRef.current;
@@ -340,6 +383,8 @@ export default function PackOpenModal({
       setRevealed([]);
       setRevealingCard(null);
       setSelectedCard(null);
+      setPreview(null);
+      setRarityExpanded(false);
       return;
     }
     runSequence();
@@ -353,6 +398,31 @@ export default function PackOpenModal({
   const RECAP_W = Math.floor((Math.min(398, 430 - RECAP_PAD * 2) - RECAP_GAP * 2) / 3);
 
   const isDone = phase === "done";
+
+  const dupeCards = isDone ? revealed.filter(c => !c.isNew) : [];
+
+  function getCardsUpTo(tier: TierKey): RevealCard[] {
+    const maxIdx = TIER_ORDER.indexOf(tier);
+    return revealed.filter(c => {
+      const idx = (TIER_ORDER as readonly string[]).indexOf(c.tier);
+      return idx >= 0 && idx <= maxIdx;
+    });
+  }
+
+  function openPreview(cards: RevealCard[], label: string) {
+    setPreview({ cards, gems: calcGemsForCards(cards), label });
+  }
+
+  function confirmUncraft() {
+    if (!preview) return;
+    preview.cards.forEach(c => { if (c.player_id) removeOwnedId(c.player_id); });
+    Object.entries(preview.gems).forEach(([t, a]) => addGems(t, a));
+    if (preview.cards.length > 0) onCardsDecrafted(preview.cards.length);
+    setPreview(null);
+    onClose();
+  }
+
+  const actionW = RECAP_W * 3 + RECAP_GAP * 2;
 
   return (
     <>
@@ -405,7 +475,7 @@ export default function PackOpenModal({
 
         {/* ── Done — 3+2 recap ── */}
         {isDone && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <div style={{
                 fontFamily: F.mono, fontSize: 10, letterSpacing: "0.22em",
@@ -440,19 +510,151 @@ export default function PackOpenModal({
               </div>
             )}
 
-            <button
-              onClick={onClose}
-              style={{
-                marginTop: 6, padding: "13px 36px", borderRadius: 10,
-                background: `linear-gradient(180deg, ${C.teal} 0%, ${C.tealDk} 100%)`,
-                border: "1px solid rgba(255,255,255,0.2)",
-                boxShadow: `inset 0 1px 0 rgba(255,255,255,0.18), 0 0 18px rgba(109,181,196,0.3)`,
-                fontFamily: F.body, fontSize: 13, fontWeight: 800,
-                color: "#071318", letterSpacing: "0.08em", cursor: "pointer",
-              }}
-            >
-              CONTINUER
-            </button>
+            {/* ── Action section ── */}
+            <div style={{ width: actionW, display: "flex", flexDirection: "column", gap: 7, marginTop: 2 }}>
+              {preview ? (
+                // Preview — gems breakdown + confirm
+                <div style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  borderRadius: 12, padding: "12px 14px",
+                  display: "flex", flexDirection: "column", gap: 10,
+                }}>
+                  <div style={{
+                    fontFamily: F.mono, fontSize: 9, letterSpacing: "0.2em",
+                    color: "rgba(255,255,255,0.4)", textTransform: "uppercase",
+                  }}>
+                    {preview.label} · {preview.cards.length} carte{preview.cards.length > 1 ? "s" : ""}
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                    {GEM_TIER_ORDER
+                      .filter(t => preview.gems[t])
+                      .map(t => (
+                        <div key={t} style={{
+                          fontFamily: F.body, fontSize: 11, fontWeight: 700,
+                          color: GEM_TIER_CLR[t] ?? "#fff",
+                          background: "rgba(255,255,255,0.06)",
+                          border: `1px solid ${(GEM_TIER_CLR[t] ?? "#fff")}44`,
+                          borderRadius: 6, padding: "4px 9px", letterSpacing: "0.04em",
+                        }}>
+                          💎 {GEM_PACK_NAMES[t] ?? t} · {preview.gems[t]}
+                        </div>
+                      ))
+                    }
+                  </div>
+                  <div style={{ display: "flex", gap: 7 }}>
+                    <button
+                      onClick={() => setPreview(null)}
+                      style={{
+                        flex: 1, padding: "10px 0", borderRadius: 9,
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        fontFamily: F.body, fontSize: 12, fontWeight: 700,
+                        color: "rgba(255,255,255,0.5)", letterSpacing: "0.06em", cursor: "pointer",
+                      }}
+                    >
+                      ANNULER
+                    </button>
+                    <button
+                      onClick={confirmUncraft}
+                      style={{
+                        flex: 1, padding: "10px 0", borderRadius: 9,
+                        background: "rgba(220,60,60,0.16)",
+                        border: "1px solid rgba(220,60,60,0.42)",
+                        fontFamily: F.body, fontSize: 12, fontWeight: 800,
+                        color: "#f08080", letterSpacing: "0.06em", cursor: "pointer",
+                      }}
+                    >
+                      CONFIRMER
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                // Select mode — 3 action buttons
+                <>
+                  <button
+                    onClick={onClose}
+                    style={{
+                      padding: "12px 16px", borderRadius: 10,
+                      background: `linear-gradient(180deg, ${C.teal} 0%, ${C.tealDk} 100%)`,
+                      border: "1px solid rgba(255,255,255,0.2)",
+                      boxShadow: `inset 0 1px 0 rgba(255,255,255,0.18), 0 0 18px rgba(109,181,196,0.3)`,
+                      fontFamily: F.body, fontSize: 12, fontWeight: 800,
+                      color: "#071318", letterSpacing: "0.08em", cursor: "pointer",
+                    }}
+                  >
+                    TOUT GARDER
+                  </button>
+
+                  {dupeCards.length > 0 && (
+                    <button
+                      onClick={() => openPreview(dupeCards, "UNCRAFT DUPES")}
+                      style={{
+                        padding: "10px 16px", borderRadius: 10,
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.11)",
+                        fontFamily: F.body, fontSize: 11, fontWeight: 700,
+                        color: "rgba(255,255,255,0.6)", letterSpacing: "0.06em", cursor: "pointer",
+                      }}
+                    >
+                      UNCRAFT DUPES · {dupeCards.length} doublon{dupeCards.length > 1 ? "s" : ""}
+                    </button>
+                  )}
+
+                  {rarityExpanded ? (
+                    <div style={{ display: "flex", gap: 5 }}>
+                      {(TIER_ORDER as readonly TierKey[])
+                        .filter(tier => revealed.some(c => c.tier === tier))
+                        .map(tier => {
+                          const tierCards = getCardsUpTo(tier);
+                          const r = RARITY[tier] ?? RARITY.GOLD;
+                          return (
+                            <button
+                              key={tier}
+                              onClick={() => { openPreview(tierCards, `${TIER_ABBR[tier] ?? tier}+`); setRarityExpanded(false); }}
+                              style={{
+                                flex: 1, padding: "8px 2px", borderRadius: 8,
+                                background: `linear-gradient(160deg, ${r.from}28, ${r.to}18)`,
+                                border: `1px solid ${r.from}55`,
+                                fontFamily: F.mono, fontSize: 8, fontWeight: 700,
+                                color: r.label, letterSpacing: "0.06em", cursor: "pointer",
+                              }}
+                            >
+                              {TIER_ABBR[tier] ?? tier.slice(0, 3)}+
+                            </button>
+                          );
+                        })
+                      }
+                      <button
+                        onClick={() => setRarityExpanded(false)}
+                        style={{
+                          padding: "8px 10px", borderRadius: 8,
+                          background: "rgba(255,255,255,0.06)",
+                          border: "1px solid rgba(255,255,255,0.10)",
+                          fontFamily: F.body, fontSize: 11, fontWeight: 700,
+                          color: "rgba(255,255,255,0.4)", cursor: "pointer",
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setRarityExpanded(true)}
+                      style={{
+                        padding: "10px 16px", borderRadius: 10,
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.11)",
+                        fontFamily: F.body, fontSize: 11, fontWeight: 700,
+                        color: "rgba(255,255,255,0.6)", letterSpacing: "0.06em", cursor: "pointer",
+                      }}
+                    >
+                      UNCRAFT RARITY ▾
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
           </div>
         )}
       </div>

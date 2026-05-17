@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { C, F, GEM_COLORS, R, RarityTier, rarityChrome } from "../lib/tokens";
+import { C, F, GEM_COLORS, GEM_PACK_NAMES, R, RarityTier, rarityChrome } from "../lib/tokens";
 import { CardPortraitData } from "./CardPortrait";
 import { CategoryScores } from "../lib/cards";
 import { removeOwnedId } from "../lib/owned";
@@ -462,7 +462,7 @@ export default function CardDetailModal({
                     touchAction: "manipulation",
                   }}
                 >
-                  {gAmt} 💎 {gTier}
+                  {gAmt} 💎 {GEM_PACK_NAMES[gTier] ?? gTier}
                 </button>
               </>
             ) : (

@@ -9,6 +9,7 @@ export interface RevealCard {
   name?: string;
   player_id?: string;
   role?: string;
+  team?: string;
   teamShort?: string;
   nationality?: string;
   image_offset?: string;

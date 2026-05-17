@@ -22,7 +22,8 @@ export const STREAK_TIERS: StreakTier[] = [
   { minDay: 21, dailySlots: 3, spawnIntervalH: 8,  xpMult: 1.38, dropGold: 1.38, dropDiamond: 1.23, dropIcon: 1.15 }, // S4
   { minDay: 14, dailySlots: 2, spawnIntervalH: 12, xpMult: 1.25, dropGold: 1.25, dropDiamond: 1.15, dropIcon: 1.10 }, // S3
   { minDay:  7, dailySlots: 2, spawnIntervalH: 12, xpMult: 1.13, dropGold: 1.13, dropDiamond: 1.08, dropIcon: 1.05 }, // S2
-  { minDay:  1, dailySlots: 1, spawnIntervalH: 12, xpMult: 1.05, dropGold: 1.00, dropDiamond: 1.00, dropIcon: 1.00 }, // S1
+  { minDay:  2, dailySlots: 1, spawnIntervalH: 12, xpMult: 1.05, dropGold: 1.00, dropDiamond: 1.00, dropIcon: 1.00 }, // S1 — J2+
+  { minDay:  0, dailySlots: 1, spawnIntervalH: 12, xpMult: 1.00, dropGold: 1.00, dropDiamond: 1.00, dropIcon: 1.00 }, // base — J0-J1
 ];
 
 // Ads queue always has 1 fixed slot with these bonuses ON TOP of daily tier values
@@ -56,15 +57,20 @@ export function getStreakTier(streak: number): StreakTier {
 }
 
 // Call once per session on mount. Increments streak if new day, resets if gap > 1 day.
+function localDateStr(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
 export function touchStreak(): { streak: number; newMilestonePack: boolean } {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
   const state = load();
 
   if (state.lastLoginDate === today) {
     return { streak: state.streak, newMilestonePack: false };
   }
 
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const yest = new Date(); yest.setDate(yest.getDate() - 1);
+  const yesterday = localDateStr(yest);
   const newStreak = state.lastLoginDate === yesterday ? state.streak + 1 : 1;
   const newMilestonePack = newStreak > 0 && newStreak % 7 === 0;
 

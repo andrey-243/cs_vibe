@@ -12,7 +12,16 @@ import {
   getChallengesWithState,
   onPackOpened,
   onCardsObtained,
+  claimChallenge,
+  claimDailyBonus,
+  rerollChallenge,
+  getDailyBonusXP,
+  canClaimDailyBonus,
+  getBonusClaimed,
+  getRerollsUsed,
+  canRerollKind,
   type ChallengeWithState,
+  type ChallengeKind,
 } from "./lib/challenges";
 import {
   getStreak,
@@ -98,7 +107,12 @@ function makeDailyPack(idx: number): QueuedPack {
 
 export default function PackPage() {
   const [now, setNow] = useState(() => Date.now());
-  const [streakState, setStreakState] = useState<StreakState>({ streak: 0, lastLoginDate: "", milestonePacks: 0 });
+  const [streakState, setStreakState] = useState<StreakState>(() => {
+    if (typeof window === "undefined") return { streak: 0, lastLoginDate: "", milestonePacks: 0 };
+    touchStreak();
+    return getStreak();
+  });
+  const [hoveredCube, setHoveredCube] = useState<number | null>(null);
   // Daily queue: grows with streak tier
   const [dailyQueue, setDailyQueue] = useState<QueuedPack[]>([]);
   // Ads queue: always 1 fixed slot
@@ -110,6 +124,13 @@ export default function PackPage() {
   const [packCards, setPackCards] = useState<RevealCard[]>([]);
   const [challenges, setChallenges] = useState<ChallengeWithState[]>(() =>
     typeof window !== "undefined" ? getChallengesWithState() : []
+  );
+  const [claimingId, setClaimingId] = useState<string | null>(null);
+  const [rerollsUsed, setRerollsUsed] = useState(() =>
+    typeof window !== "undefined" ? getRerollsUsed() : 0
+  );
+  const [bonusClaimed, setBonusClaimed] = useState(() =>
+    typeof window !== "undefined" ? getBonusClaimed() : false
   );
 
   useEffect(() => {
@@ -127,7 +148,11 @@ export default function PackPage() {
   }, []);
 
   useEffect(() => {
-    const refresh = () => setChallenges(getChallengesWithState());
+    const refresh = () => {
+      setChallenges(getChallengesWithState());
+      setRerollsUsed(getRerollsUsed());
+      setBonusClaimed(getBonusClaimed());
+    };
     refresh();
     window.addEventListener("csv-challenges-updated", refresh);
     return () => window.removeEventListener("csv-challenges-updated", refresh);
@@ -169,7 +194,7 @@ export default function PackPage() {
         const data = await res.json();
         cards = data.map((c: {
           player_id: string; name: string; overall: number; tier: string;
-          role: string; teamShort: string; nationality: string;
+          role: string; team: string; teamShort: string; nationality: string;
           image_offset?: string; teamRank?: number;
           category_scores?: { firepower: number; opening: number; clutching: number; entrying: number; trading: number; impact: number };
         }) => {
@@ -180,6 +205,7 @@ export default function PackPage() {
             ovr: c.overall,
             tier: c.tier,
             role: c.role,
+            team: c.team,
             teamShort: c.teamShort,
             nationality: c.nationality,
             image_offset: c.image_offset,
@@ -227,6 +253,30 @@ export default function PackPage() {
       claimed: true, // ads timer starts immediately on add
     }]);
     setAdsNextAt(now + 6 * 3600 * 1000);
+  }
+
+  function handleClaimChallenge(id: string) {
+    if (claimingId) return;
+    setClaimingId(id);
+    setTimeout(() => {
+      claimChallenge(id);
+      setChallenges(getChallengesWithState());
+      setBonusClaimed(getBonusClaimed());
+      setClaimingId(null);
+    }, 620);
+  }
+
+  function handleReroll(kind: ChallengeKind) {
+    rerollChallenge(kind);
+    setChallenges(getChallengesWithState());
+    setRerollsUsed(getRerollsUsed());
+  }
+
+  function handleClaimBonus() {
+    if (bonusClaimed || !canClaimDailyBonus()) return;
+    claimDailyBonus();
+    setBonusClaimed(true);
+    setChallenges(getChallengesWithState());
   }
 
   // Derived state
@@ -459,20 +509,68 @@ export default function PackPage() {
                 </div>
               </div>
               <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                <div style={{ fontFamily: F.mono, fontSize: 13, fontWeight: 800, color: "#1c1408", background: `linear-gradient(180deg, ${C.gold}, ${C.goldDk})`, borderRadius: 6, padding: "3px 8px", letterSpacing: "0.04em" }}>
-                  ×{xpMult.toFixed(2)} XP
-                </div>
+                {xpMult > 1.00 && (
+                  <div style={{ fontFamily: F.mono, fontSize: 13, fontWeight: 800, color: "#1c1408", background: `linear-gradient(180deg, ${C.gold}, ${C.goldDk})`, borderRadius: 6, padding: "3px 8px", letterSpacing: "0.04em" }}>
+                    ×{xpMult.toFixed(2)} XP
+                  </div>
+                )}
                 <div style={{ fontFamily: F.mono, fontSize: 8, color: C.gold, letterSpacing: "0.1em" }}>
                   {tier.dailySlots} PACK{tier.dailySlots > 1 ? "S" : ""}/JOUR
                 </div>
               </div>
             </div>
             {/* 7-case bar */}
-            <div style={{ display: "flex", gap: 3, marginBottom: 8 }}>
-              {[1, 2, 3, 4, 5, 6, 7].map((i) => (
-                <div key={i} style={{ flex: 1, height: 8, borderRadius: 4, background: i <= filled ? `linear-gradient(90deg, ${C.gold}, ${C.goldDk})` : "rgba(255,255,255,0.07)", border: `1px solid ${i <= filled ? "rgba(255,255,255,0.3)" : C.border}`, boxShadow: i <= filled ? "0 0 5px rgba(255,210,63,0.35)" : "none" }} />
-              ))}
-            </div>
+            {(() => {
+              const weekBase = Math.floor(streak / 7) * 7;
+              return (
+                <div style={{ display: "flex", gap: 3, marginBottom: 8 }}>
+                  {[1, 2, 3, 4, 5, 6, 7].map((i) => {
+                    const cubeDay = weekBase + i;
+                    const cubeTier = getStreakTier(cubeDay);
+                    const isDiff = cubeTier.xpMult !== tier.xpMult || cubeTier.dailySlots !== tier.dailySlots;
+                    const isActive = hoveredCube === i && isDiff;
+                    return (
+                      <div
+                        key={i}
+                        style={{ flex: 1, position: "relative" }}
+                        onMouseEnter={() => setHoveredCube(i)}
+                        onMouseLeave={() => setHoveredCube(null)}
+                      >
+                        <div style={{ height: 8, borderRadius: 4, background: i <= filled ? `linear-gradient(90deg, ${C.gold}, ${C.goldDk})` : "rgba(255,255,255,0.07)", border: `1px solid ${i <= filled ? "rgba(255,255,255,0.3)" : C.border}`, boxShadow: i <= filled ? "0 0 5px rgba(255,210,63,0.35)" : "none", cursor: isDiff ? "default" : "default" }} />
+                        {isActive && (
+                          <div style={{
+                            position: "absolute",
+                            bottom: "calc(100% + 5px)",
+                            ...(i >= 6
+                              ? { right: 0 }
+                              : i <= 2
+                              ? { left: 0 }
+                              : { left: "50%", transform: "translateX(-50%)" }),
+                            background: C.bg2,
+                            border: `1px solid ${C.borderHi}`,
+                            borderRadius: 6,
+                            padding: "4px 8px",
+                            zIndex: 200,
+                            boxShadow: "0 4px 14px rgba(0,0,0,0.6)",
+                            whiteSpace: "nowrap",
+                            pointerEvents: "none",
+                          }}>
+                            <span style={{ fontFamily: F.mono, fontSize: 9, fontWeight: 800, color: C.gold }}>
+                              ×{cubeTier.xpMult.toFixed(2)} XP
+                            </span>
+                            {cubeTier.dailySlots !== tier.dailySlots && (
+                              <span style={{ fontFamily: F.mono, fontSize: 9, color: C.muted }}>
+                                {" · "}{cubeTier.dailySlots} packs/j
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
             {/* Next tier hint */}
             <div style={{ fontFamily: F.mono, fontSize: 7.5, color: isMaxTier ? C.gold : C.muted, letterSpacing: "0.1em" }}>
               {isMaxTier
@@ -483,67 +581,173 @@ export default function PackPage() {
         );
       })()}
 
-      {/* Défis */}
-      <div style={{ padding: "8px 14px 0" }}>
-        <div style={{ borderRadius: 12, padding: "10px 12px", background: C.panel, border: `1px solid ${C.border}` }}>
-          {(() => {
-            const doneCount = challenges.filter((c) => c.done).length;
-            const pct = challenges.length ? Math.round((doneCount / challenges.length) * 100) : 0;
-            const midnight = new Date(now); midnight.setHours(24, 0, 0, 0);
-            const resetMs = Math.max(0, midnight.getTime() - now);
-            const rh = Math.floor(resetMs / 3600000);
-            const rm = Math.floor((resetMs % 3600000) / 60000);
-            const rs = Math.floor((resetMs % 60000) / 1000);
-            return (
-              <>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ fontFamily: F.mono, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted }}>
-                    DÉFIS DU JOUR · {doneCount}/{challenges.length}
+      {/* Défis — header */}
+      {(() => {
+        const doneCount = challenges.filter((c) => c.done).length;
+        const allDone = doneCount === challenges.length && challenges.length > 0;
+        const bonusReady = allDone && !bonusClaimed;
+        const pct = challenges.length ? Math.round((doneCount / challenges.length) * 100) : 0;
+        const midnight = new Date(now); midnight.setHours(24, 0, 0, 0);
+        const resetMs = Math.max(0, midnight.getTime() - now);
+        const rh = Math.floor(resetMs / 3600000);
+        const rm = Math.floor((resetMs % 3600000) / 60000);
+        const rs = Math.floor((resetMs % 60000) / 1000);
+        const bonusXP = getDailyBonusXP();
+
+        return (
+          <div style={{ padding: "8px 14px 0" }}>
+            <div
+              className={bonusReady ? "challenge-bonus-ready" : ""}
+              onClick={bonusReady ? handleClaimBonus : undefined}
+              style={{
+                borderRadius: 12,
+                padding: "10px 12px",
+                background: bonusClaimed
+                  ? "rgba(127,184,147,0.06)"
+                  : bonusReady
+                  ? "linear-gradient(135deg, rgba(201,165,101,0.12), rgba(201,165,101,0.04))"
+                  : C.panel,
+                border: `1px solid ${bonusClaimed ? "rgba(127,184,147,0.22)" : bonusReady ? "rgba(201,165,101,0.45)" : C.border}`,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ fontFamily: F.mono, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: bonusClaimed ? C.green : bonusReady ? C.gold : C.muted }}>
+                  {bonusClaimed
+                    ? "✓ DÉFIS DU JOUR · BONUS RÉCUPÉRÉ"
+                    : bonusReady
+                    ? `DÉFIS DU JOUR · 5/5 ✦ CLIQUER POUR BONUS`
+                    : `DÉFIS DU JOUR · ${doneCount}/${challenges.length}`}
+                </div>
+                {bonusReady ? (
+                  <div style={{ fontFamily: F.mono, fontSize: 13, fontWeight: 800, color: C.gold, letterSpacing: "0.04em" }}>
+                    +{bonusXP} XP
                   </div>
+                ) : (
                   <div style={{ fontFamily: F.mono, fontSize: 8.5, color: C.muted, letterSpacing: "0.1em" }}>
                     RESET {rh}H {String(rm).padStart(2, "0")}M {String(rs).padStart(2, "0")}S
                   </div>
-                </div>
-                <div style={{ marginTop: 6 }}>
-                  <XPBar pct={pct} color="teal" height={5} />
-                </div>
-              </>
-            );
-          })()}
-        </div>
-      </div>
-
-      {/* Liste challenges */}
-      <div style={{ padding: "14px 14px 0" }}>
-        {challenges.map((c) => (
-          <div
-            key={c.id}
-            style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", marginBottom: 6, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 10 }}
-          >
-            <div
-              style={{ width: 22, height: 22, borderRadius: 6, background: c.done ? `linear-gradient(180deg, ${C.green}, #138a5b)` : "rgba(0,0,0,0.3)", border: `1px solid ${c.done ? "rgba(255,255,255,0.3)" : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: F.body, fontSize: 14, fontWeight: 700, boxShadow: c.done ? `0 0 8px ${C.green}88` : "none", flexShrink: 0 }}
-            >
-              {c.done ? "✓" : ""}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, color: c.done ? C.faint : "#fff", textDecoration: c.done ? "line-through" : "none", display: "flex", alignItems: "center", gap: 5 }}>
-                {c.kind === "obtain_nation" && c.nationIso && <Flag code={c.nationIso} width={14} />}
-                {c.label}
+                )}
               </div>
-              {c.target > 1 && !c.done && (
-                <div style={{ fontFamily: F.mono, fontSize: 8, color: C.muted, letterSpacing: "0.1em", marginBottom: 2 }}>
-                  {c.progress}/{c.target}
+              {!bonusClaimed && (
+                <div style={{ marginTop: 6 }}>
+                  <XPBar pct={pct} color={bonusReady ? "gold" : "teal"} height={5} />
                 </div>
               )}
-              <div style={{ marginTop: 3 }}>
-                <XPBar pct={c.pct} color={c.done ? "teal" : "gold"} height={4} />
-              </div>
-            </div>
-            <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: "0.06em", flexShrink: 0 }}>
-              +{c.xp} XP
             </div>
           </div>
-        ))}
+        );
+      })()}
+
+      {/* Liste challenges */}
+      <div style={{ padding: "8px 14px 6px" }}>
+
+        {[...challenges].sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0)).map((c) => {
+          const isClaiming = claimingId === c.id;
+          const canReroll = !c.done && rerollsUsed < 3 && canRerollKind(c.kind);
+
+          // Compact view after claiming
+          if (c.claimed) {
+            return (
+              <div
+                key={c.id}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px", marginBottom: 4, background: "rgba(127,184,147,0.05)", border: "1px solid rgba(127,184,147,0.12)", borderRadius: 8 }}
+              >
+                <div style={{ width: 14, height: 14, borderRadius: 4, background: "rgba(127,184,147,0.22)", border: "1px solid rgba(127,184,147,0.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, color: C.green, fontWeight: 800, flexShrink: 0 }}>
+                  ✓
+                </div>
+                <div style={{ flex: 1, fontFamily: F.body, fontSize: 10, fontWeight: 600, color: C.faint, display: "flex", alignItems: "center", gap: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {c.kind === "obtain_nation" && c.nationIso && <Flag code={c.nationIso} width={10} />}
+                  {c.label}
+                </div>
+                <div style={{ fontFamily: F.mono, fontSize: 9, fontWeight: 700, color: "rgba(127,184,147,0.65)", flexShrink: 0 }}>
+                  +{c.xp} XP
+                </div>
+              </div>
+            );
+          }
+
+          // Full view (in-progress or done-but-unclaimed)
+          return (
+            <div
+              key={c.id}
+              style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "center", gap: 10, padding: "8px 10px", marginBottom: 6, background: c.done ? "rgba(109,181,196,0.07)" : "rgba(255,255,255,0.04)", border: `1px solid ${c.done ? "rgba(109,181,196,0.32)" : C.border}`, borderRadius: 10 }}
+            >
+              {/* Shimmer overlay */}
+              {isClaiming && <div className="challenge-shimmer-el" />}
+              {/* Particles left→right */}
+              {isClaiming && [
+                { left: 4,  top: 22, flyX: 145, flyY: -14, delay: 0,  col: C.gold },
+                { left: 8,  top: 62, flyX: 160, flyY: 10,  delay: 28, col: "#fff" },
+                { left: 14, top: 32, flyX: 132, flyY: -8,  delay: 55, col: C.gold },
+                { left: 3,  top: 72, flyX: 152, flyY: 18,  delay: 18, col: C.teal },
+                { left: 18, top: 42, flyX: 148, flyY: -22, delay: 48, col: "#fff" },
+                { left: 10, top: 82, flyX: 138, flyY: 6,   delay: 38, col: C.gold },
+                { left: 12, top: 14, flyX: 156, flyY: -10, delay: 68, col: C.teal },
+                { left: 22, top: 54, flyX: 128, flyY: 12,  delay: 12, col: "#fff" },
+              ].map((p, i) => (
+                <div
+                  key={i}
+                  className="challenge-particle-el"
+                  style={{
+                    left: `${p.left}%`,
+                    top: `${p.top}%`,
+                    background: p.col,
+                    animationDelay: `${p.delay}ms`,
+                    "--fly-x": `${p.flyX}px`,
+                    "--fly-y": `${p.flyY}px`,
+                  } as React.CSSProperties}
+                />
+              ))}
+
+              {/* Checkbox */}
+              <div style={{ width: 22, height: 22, borderRadius: 6, background: c.done ? `linear-gradient(180deg, ${C.teal}, ${C.tealDk})` : "rgba(0,0,0,0.3)", border: `1px solid ${c.done ? "rgba(255,255,255,0.3)" : C.border}`, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: F.body, fontSize: 14, fontWeight: 700, boxShadow: c.done ? `0 0 8px ${C.teal}88` : "none", flexShrink: 0 }}>
+                {c.done ? "✓" : ""}
+              </div>
+
+              {/* Content */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontFamily: F.body, fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+                  {c.kind === "obtain_nation" && c.nationIso && <Flag code={c.nationIso} width={14} />}
+                  {c.label}
+                </div>
+                {c.target > 1 && !c.done && (
+                  <div style={{ fontFamily: F.mono, fontSize: 8, color: C.muted, letterSpacing: "0.1em", marginBottom: 2 }}>
+                    {c.progress}/{c.target}
+                  </div>
+                )}
+                <div style={{ marginTop: 3 }}>
+                  <XPBar pct={c.pct} color={c.done ? "teal" : "gold"} height={4} />
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                {c.done ? (
+                  <button
+                    onClick={() => handleClaimChallenge(c.id)}
+                    disabled={!!claimingId}
+                    style={{ padding: "5px 11px", borderRadius: 6, background: `linear-gradient(180deg, ${C.teal} 0%, ${C.tealDk} 100%)`, border: "1px solid rgba(255,255,255,0.18)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.14)", fontFamily: F.body, fontSize: 11, fontWeight: 700, color: "#071318", cursor: claimingId ? "default" : "pointer", whiteSpace: "nowrap", letterSpacing: "0.04em", opacity: claimingId ? 0.6 : 1 }}
+                  >
+                    Récupérer ✦
+                  </button>
+                ) : (
+                  <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 700, color: C.gold, letterSpacing: "0.06em" }}>
+                    +{c.xp} XP
+                  </div>
+                )}
+
+                {canReroll && (
+                  <button
+                    onClick={() => handleReroll(c.kind)}
+                    style={{ padding: "2px 7px", borderRadius: 4, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.10)", fontFamily: F.mono, fontSize: 7.5, color: C.faint, cursor: "pointer", whiteSpace: "nowrap", letterSpacing: "0.06em" }}
+                  >
+                    ▶ REROLL · {3 - rerollsUsed}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

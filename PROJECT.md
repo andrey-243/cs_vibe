@@ -523,6 +523,8 @@ Fallback playLanding (si _cardAppearBuf null) : synthèse originale conservée p
   - `getOwnedCounts()` → `Record<string, number>`
   - `getOwnedIds()` → `Set<string>` (pour compat backward)
   - `addOwnedIds(ids[])` → incrémente le count de chaque id, dispatche `window.Event("csv-owned-updated")`
+  - `removeOwnedId(id)` → décrémente le count de 1, supprime la clé si 0
+  - `bulkRemoveOwned(entries[])` → retire des counts spécifiques pour N ids en **un seul** write + dispatch (utilisé par les flows bulk uncraft)
   - `clearOwned()` → supprime les deux clés localStorage
 - Après chaque pack ouvert : `addOwnedIds` persiste les counts + dispatche l'event
 - `CollectionGrid` écoute l'event → met à jour `ownedCounts` + `ownedIds` en temps réel sans reload
@@ -600,12 +602,31 @@ Props supplémentaires :
 - **"Toutes"** : `CardGrid` paginé (9/page), cartes non possédées affichées avec `locked=true` (overlay rayures diagonales). Filtres appliqués.
 - **Une seule pagination** en bas de page, commune aux deux sections, basée sur `filteredAll.length`. `page` state dans `CollectionGrid`, passé en prop à `CardGrid` (stateless côté pagination). Reset à 0 sur changement de filtre.
 
+**Bulk uncraft — 2 méthodes (section "Mes cartes") :**
+
+Barre d'actions sous le header "Mes cartes" (visible seulement quand la section est dépliée et qu'on possède au moins 1 carte).
+
+| Mode | Déclencheur | Portée |
+|---|---|---|
+| **DOUBLONS ×N** | Bouton rouge, visible si N > 0 duplicatas | Toutes les cartes possédées en >1 exemplaire, INDÉPENDAMMENT des filtres actifs. Garde 1 copie, décraft les extras. |
+| **SÉLECTIONNER** | Bouton teal | Mode sélection : tap sur les cartes pour cocher/décocher (ring teal + checkmark). Bar flottante `DÉCRAFT · N` apparaît au-dessus de la BottomNav quand ≥1 sélectionné. Décraft 1 copie par carte sélectionnée. |
+
+Après confirmation, les deux modes appellent `bulkRemoveOwned` + `addGems` par tier + `onCardsDecrafted(total)`.
+
+**`BulkUncraftModal`** — modal de confirmation partagé par les deux flows :
+- Titre + nombre de cartes
+- Tableau gems par gem tier (couleur tier · label · ×count · total 💎)
+- Boutons Annuler / Confirmer
+
 **Architecture CardGrid :**
 ```
 CollectionGrid (page state ici, totalPages basé sur filteredAll)
-  ├── Section "Mes cartes" — mineCards.map(), pas de slice
+  ├── Section "Mes cartes"
+  │     ├── Action row — [DOUBLONS ×N] [SÉLECTIONNER] ou [N sélectionnées] [✕ ANNULER]
+  │     └── mineCards.map() avec overlay sélection si selectMode
   ├── Section "Toutes"    — CardGrid(page=page, cards=filteredAll)
-  └── Pagination unique   — −10 / Préc. / Suiv. / +10
+  ├── Pagination unique   — −10 / Préc. / Suiv. / +10
+  └── Floating bar fixe  — DÉCRAFT · N (z-index 310, bottom 72px, selectMode + selectedIds.size > 0)
 ```
 
 **Sizing des cartes :**  
@@ -656,6 +677,9 @@ main { height: 100%; overflow: hidden; }
 - Contenu : < 200
 - Dropdowns : 200
 - BottomNav : 300 (doit être > dropdowns)
+- Floating selection bar (bulk uncraft) : 310 (au-dessus de la nav)
+- CardDetailModal : 500
+- BulkUncraftModal : 600
 → Si on ajoute des overlays, respecter cette hiérarchie.
 
 ### Dropdowns `position: fixed`
@@ -837,20 +861,19 @@ Constantes dans `tokens.ts` :
 - TopBar level pill et tab Profil écoutent `csv-gems-updated` → mise à jour temps réel sans reload
 - `removeOwnedId(id)` ajouté à `owned.ts` — décrémente le count, supprime la clé si 0
 
-**TopBar — layout (1 ligne)**
-
-> ⚠️ Design fonctionnel — à revoir en V1.1
+**TopBar — layout**
 
 ```
-[LVL pill (hover→gems)] [══XP bar══ (hover→XP)] [chip → Next rank / reward]
+[LVL pill (hover→gems)]  [████████░░░░ → Silver IV · +1 Pack]
+                          ↑ barre 16px, next level overlayé à droite
 ```
 
-- **Level pill** (gauche) : `LVL N` + nom rank, fond gold translucide. Hover → dropdown gems (`GEM_PACK_NAMES[tier]` + count).
-- **XP bar** (centre, flex:1) : hover → tooltip `X / Y XP` (XP dans le niveau / XP total du niveau).
-- **Chip next level** (droite) : fond `rgba(255,255,255,0.05)` + bordure, `→ Silver IV` (bold 10px) + récompense en teal 8px en dessous.
+- **Level pill** (gauche, `flexShrink: 0`) : `LVL N` + nom rank, fond gold translucide. Hover → dropdown gems (`GEM_PACK_NAMES[tier]` + count).
+- **XP bar** (droite, `flex: 1`) : hauteur **16px**, barre avec fill gradient gold/crimson. Next level text **overlayé à l'intérieur** à droite — `→ Silver IV` (8px, blanc 82%, textShadow) + récompense (7.5px, teal). Hover → tooltip centré `max-content` avec `X / Y XP` en baseline-align.
   - Récompenses par palier (`nextLevelReward(nextLevel)`) :
     - Lvl 7 → `Pack TOP100` · Lvl 18 → `Pack TOP25` · Lvl 28 → `Pack TOP10` · Lvl 41 → `Pack ICON`
     - Faceit + ESEA → `+Pack · Gems` · Silver/Gold/MG/LE → `+1 Pack`
+- Pas de fond ni bordure sur le wrapper du TopBar — transparent comme le reste de la page.
 
 **UI gems — tab Profil (`app/profil/page.tsx`)**
 - Seuil craft : `CRAFT_THRESHOLD = 250` gems par tier
@@ -1616,6 +1639,7 @@ Stage tout (`git add -A`), commit, push en une commande depuis n'importe quel te
 - [x] Daily challenges — 5 quests/jour, pool 11 variantes, seed daily, localStorage, hooks pack/rarity/nation, reset minuit
 - [x] XP system frontend — `lib/xp.ts` + `lib/challenges.ts`, courbe 41 niveaux recalibrée ×4 (Silver III = fin sem 1 casual)
 - [x] Système de streak — widget full-width (jours, ×XP mult, barre 7 cases, hint palier suivant), logique localStorage complète
+- [x] Bulk uncraft collection — Décraft doublons (keep 1) en 1 clic + mode sélection multi-cartes, confirmation modal avec preview gems par tier
 - [ ] Level-up detection dans `addXP()` — comparer ancien/nouveau niveau, dispatcher `csv-level-up` CustomEvent
 - [ ] Attribution récompenses level-up — pack ou gems selon `nextLevelReward(level)`, persiste en localStorage (queue pack à claim)
 - [ ] Modal/notification level-up — célébration visuelle + affichage de la récompense reçue

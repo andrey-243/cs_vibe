@@ -57,6 +57,19 @@ export function removeOwnedId(id: string): void {
   window.dispatchEvent(new Event("csv-owned-updated"));
 }
 
+/** Remove specific counts for multiple ids in a single write + dispatch. */
+export function bulkRemoveOwned(entries: { id: string; count: number }[]): void {
+  if (typeof window === "undefined") return;
+  const counts = readCounts();
+  for (const { id, count } of entries) {
+    if (!counts[id]) continue;
+    counts[id] -= count;
+    if (counts[id] <= 0) delete counts[id];
+  }
+  localStorage.setItem(KEY, JSON.stringify(counts));
+  window.dispatchEvent(new Event("csv-owned-updated"));
+}
+
 export function clearOwned(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem(KEY);

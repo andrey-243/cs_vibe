@@ -40,6 +40,24 @@ export const GEM_COLORS: Record<string, [string, string]> = {
   TOP100: ["#a06a3b", "#3e2510"],
 };
 
+export const GEM_PARTY_NAMES: Record<string, string> = {
+  TOP5: "CHOSEN FEW",
+  TOP15: "PRETENDERS",
+  TOP25: "GATEKEEPERS",
+  TOP50: "GRINDERS",
+  TOP75: "PICK'EM KILLERS",
+  TOP100: "NO LAN NO FAME",
+};
+
+export const GEM_PACK_NAMES: Record<string, string> = {
+  TOP5: "S-Tier",
+  TOP15: "Tier 1",
+  TOP25: "Tier 1.5",
+  TOP50: "Tier 2",
+  TOP75: "Tier 3",
+  TOP100: "Tier 4",
+};
+
 export function rarityChrome(tier: RarityTier) {
   const r = R[tier] ?? R.GOLD;
   return {

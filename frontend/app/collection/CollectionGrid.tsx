@@ -1,13 +1,57 @@
 "use client";
 
 import { useState, useMemo, useRef, useLayoutEffect, useEffect } from "react";
-import { getOwnedIds, getOwnedCounts } from "../lib/owned";
-import { C, F, R, RarityTier } from "../lib/tokens";
+import { getOwnedIds, getOwnedCounts, bulkRemoveOwned } from "../lib/owned";
+import { addGems } from "../lib/gems";
+import { onCardsDecrafted } from "../lib/challenges";
+import { C, F, R, RarityTier, GEM_COLORS, GEM_PACK_NAMES } from "../lib/tokens";
 import { CardDisplay } from "../lib/cards";
 import MiniCard from "../components/MiniCard";
 import CardDetailModal from "../components/CardDetailModal";
 
 const RARITY_ORDER: RarityTier[] = ["ICON", "DIAMOND", "GOLD", "SILVER", "BRONZE", "LEGACY"];
+
+const GEM_TIER_KEYS = ["TOP5", "TOP15", "TOP25", "TOP50", "TOP75", "TOP100"] as const;
+type GemTierKey = typeof GEM_TIER_KEYS[number];
+
+function cardGemTier(teamRank: number | undefined): GemTierKey {
+  if (!teamRank || teamRank > 100) return "TOP100";
+  if (teamRank <= 5) return "TOP5";
+  if (teamRank <= 15) return "TOP15";
+  if (teamRank <= 25) return "TOP25";
+  if (teamRank <= 50) return "TOP50";
+  if (teamRank <= 75) return "TOP75";
+  return "TOP100";
+}
+
+const GEM_BY_RARITY: Record<RarityTier, number> = {
+  BRONZE: 5, SILVER: 12, GOLD: 30, DIAMOND: 75, ICON: 400, LEGACY: 30,
+};
+
+type GemPreviewRow = { tier: string; gems: number; cardCount: number; label: string; from: string };
+
+function computeGemPreview(items: { card: CardDisplay; removeCount: number }[]): GemPreviewRow[] {
+  const byTier = new Map<string, { gems: number; cardCount: number }>();
+  for (const { card, removeCount } of items) {
+    const gTier = cardGemTier(card.teamRank);
+    const gAmt = (GEM_BY_RARITY[card.tier] ?? 5) * removeCount;
+    const prev = byTier.get(gTier) ?? { gems: 0, cardCount: 0 };
+    byTier.set(gTier, { gems: prev.gems + gAmt, cardCount: prev.cardCount + removeCount });
+  }
+  return GEM_TIER_KEYS
+    .filter((t) => byTier.has(t))
+    .map((t) => {
+      const { gems, cardCount } = byTier.get(t)!;
+      const [from] = GEM_COLORS[t] ?? ["#c9a565"];
+      return { tier: t, gems, cardCount, label: GEM_PACK_NAMES[t] ?? t, from };
+    });
+}
+
+const TIER_OPTIONS = GEM_TIER_KEYS.map((key) => ({
+  value: key,
+  label: GEM_PACK_NAMES[key] ?? key,
+  color: GEM_COLORS[key]?.[0] ?? "#aaa",
+}));
 
 const MAJOR_COUNTRIES = new Set([
   "RU","BR","DK","SE","UA","MN","PL","US","AR","CN",
@@ -63,7 +107,7 @@ function FilterDropdown({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const ref = useRef<HTMLDivElement>(null);
 
-  useState(() => {
+  useEffect(() => {
     function onOutside(e: MouseEvent | TouchEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     }
@@ -73,7 +117,7 @@ function FilterDropdown({
       document.removeEventListener("mousedown", onOutside);
       document.removeEventListener("touchstart", onOutside);
     };
-  });
+  }, []);
 
   function handleToggle() {
     if (!open && triggerRef.current) {
@@ -246,6 +290,116 @@ function SectionDivider({
   );
 }
 
+// ── Bulk uncraft confirmation modal ──────────────────────────────────────────
+
+function BulkUncraftModal({
+  title,
+  cardCount,
+  preview,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  cardCount: number;
+  preview: GemPreviewRow[];
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onCancel(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return (
+    <div
+      onClick={onCancel}
+      style={{
+        position: "fixed", inset: 0, zIndex: 600,
+        background: "rgba(3,3,8,0.88)",
+        backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        padding: "32px 24px",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: "100%", maxWidth: 340,
+          background: C.bg2, border: `1px solid ${C.borderHi}`,
+          borderRadius: 16, padding: "24px 20px",
+          display: "flex", flexDirection: "column", gap: 16,
+        }}
+      >
+        {/* Title */}
+        <div>
+          <div style={{ fontFamily: F.body, fontSize: 15, fontWeight: 800, color: C.ink }}>
+            {title}
+          </div>
+          <div style={{ fontFamily: F.mono, fontSize: 9, color: C.faint, marginTop: 4, letterSpacing: "0.08em" }}>
+            {cardCount} carte{cardCount > 1 ? "s" : ""} à décraft
+          </div>
+        </div>
+
+        {/* Gem preview */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ fontFamily: F.mono, fontSize: 8, color: C.faint, letterSpacing: "0.1em", marginBottom: 2 }}>
+            GEMS OBTENUS
+          </div>
+          {preview.length > 0 ? preview.map(({ tier, gems, cardCount: cc, label, from }) => (
+            <div key={tier} style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "8px 12px", borderRadius: 8,
+              background: `${from}18`, border: `1px solid ${from}44`,
+            }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: from, flexShrink: 0 }} />
+              <div style={{ flex: 1, fontFamily: F.mono, fontSize: 9, fontWeight: 800, color: from, letterSpacing: "0.06em" }}>
+                {label}
+              </div>
+              <div style={{ fontFamily: F.mono, fontSize: 8, color: C.faint, marginRight: 4 }}>
+                ×{cc}
+              </div>
+              <div style={{ fontFamily: F.mono, fontSize: 11, fontWeight: 800, color: from }}>
+                {gems} 💎
+              </div>
+            </div>
+          )) : (
+            <div style={{ fontFamily: F.mono, fontSize: 9, color: C.faint, textAlign: "center", padding: "8px 0" }}>
+              Aucune gemme
+            </div>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onCancel}
+            style={{
+              flex: 1, padding: "12px 0", borderRadius: 10,
+              background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
+              color: C.muted, fontFamily: F.body, fontSize: 12, fontWeight: 700,
+              cursor: "pointer", touchAction: "manipulation",
+            }}
+          >
+            Annuler
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              flex: 1, padding: "12px 0", borderRadius: 10,
+              background: "rgba(184,80,96,0.2)", border: `1px solid ${C.crimson}`,
+              color: "#ff8090", fontFamily: F.body, fontSize: 12, fontWeight: 700,
+              cursor: "pointer", touchAction: "manipulation",
+            }}
+          >
+            Confirmer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Card grid ────────────────────────────────────────────────────────────────
 
 const PAGE_SIZE = 9;
@@ -312,15 +466,21 @@ function CardGrid({
 // ── CollectionGrid ───────────────────────────────────────────────────────────
 
 export default function CollectionGrid({ cards, lootPoolCountries }: { cards: CardDisplay[]; lootPoolCountries: string[] }) {
-  const [mineExpanded, setMineExpanded] = useState(true);
-  const [allExpanded, setAllExpanded] = useState(true);
+  const [mineExpanded, setMineExpanded] = useState(false);
+  const [allExpanded, setAllExpanded] = useState(false);
   const [rarityFilter, setRarityFilter] = useState<RarityTier | "">("");
   const [categoryFilter, setCategoryFilter] = useState("");
-  const [teamFilter, setTeamFilter] = useState("");
+  const [tierFilter, setTierFilter] = useState<GemTierKey | "">("");
   const [countryFilter, setCountryFilter] = useState("");
   const [page, setPage] = useState(0);
   const [cardW, setCardW] = useState(84);
   const [selected, setSelected] = useState<CardDisplay | null>(null);
+
+  // Bulk uncraft state
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState<"dupes" | "selection" | null>(null);
+
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set());
@@ -373,16 +533,6 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
     return opts.sort((a, b) => a.label.localeCompare(b.label));
   }, [cards]);
 
-  const teamOptions = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const c of cards) {
-      if (!map.has(c.team)) map.set(c.team, c.teamRank);
-    }
-    return [...map.entries()]
-      .sort((a, b) => a[1] - b[1])
-      .map(([team]) => ({ value: team, label: team }));
-  }, [cards]);
-
   const lootPoolSet = useMemo(() => new Set(lootPoolCountries), [lootPoolCountries]);
 
   const countryOptions = useMemo(() => {
@@ -414,11 +564,18 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
     ];
   }, [lootPoolSet, cards]);
 
+  // All owned cards (unfiltered) — for dupes computation
+  const allMineCards = useMemo(
+    () => cards.filter((c) => (ownedCounts[c.player_id] ?? 0) > 0),
+    [cards, ownedCounts]
+  );
+
+  // Filtered mine cards (respects active filters)
   const mineCards = useMemo(() => {
-    let list = cards.filter((c) => (ownedCounts[c.player_id] ?? 0) > 0);
+    let list = allMineCards;
     if (rarityFilter) list = list.filter((c) => c.tier === rarityFilter);
     if (categoryFilter) list = list.filter((c) => c.role === categoryFilter);
-    if (teamFilter) list = list.filter((c) => c.team === teamFilter);
+    if (tierFilter) list = list.filter((c) => cardGemTier(c.teamRank) === tierFilter);
     if (countryFilter) {
       if (MAJOR_COUNTRIES.has(countryFilter)) {
         list = list.filter((c) => c.nationality === countryFilter);
@@ -428,13 +585,13 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
       }
     }
     return list;
-  }, [cards, ownedCounts, rarityFilter, categoryFilter, teamFilter, countryFilter]);
+  }, [allMineCards, rarityFilter, categoryFilter, tierFilter, countryFilter]);
 
   const filteredAll = useMemo(() => {
     let list = cards;
     if (rarityFilter) list = list.filter((c) => c.tier === rarityFilter);
     if (categoryFilter) list = list.filter((c) => c.role === categoryFilter);
-    if (teamFilter) list = list.filter((c) => c.team === teamFilter);
+    if (tierFilter) list = list.filter((c) => cardGemTier(c.teamRank) === tierFilter);
     if (countryFilter) {
       if (MAJOR_COUNTRIES.has(countryFilter)) {
         list = list.filter((c) => c.nationality === countryFilter);
@@ -444,10 +601,60 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
       }
     }
     return list;
-  }, [cards, rarityFilter, categoryFilter, teamFilter, countryFilter]);
+  }, [cards, rarityFilter, categoryFilter, tierFilter, countryFilter]);
 
-  const hasActiveFilter = !!(rarityFilter || categoryFilter || teamFilter || countryFilter);
+  // Dupes: all owned cards with count > 1 (ignores filters — global cleanup)
+  const dupesItems = useMemo(
+    () => allMineCards
+      .filter((c) => (ownedCounts[c.player_id] ?? 0) > 1)
+      .map((c) => ({ card: c, removeCount: (ownedCounts[c.player_id] ?? 0) - 1 })),
+    [allMineCards, ownedCounts]
+  );
+  const dupesCount = dupesItems.reduce((sum, { removeCount }) => sum + removeCount, 0);
+  const dupesPreview = useMemo(() => computeGemPreview(dupesItems), [dupesItems]);
 
+  // Selection: one copy per selected card
+  const selectionItems = useMemo(
+    () => Array.from(selectedIds)
+      .map((id) => cards.find((c) => c.player_id === id))
+      .filter((c): c is CardDisplay => !!c)
+      .map((c) => ({ card: c, removeCount: 1 })),
+    [selectedIds, cards]
+  );
+  const selectionPreview = useMemo(() => computeGemPreview(selectionItems), [selectionItems]);
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }
+
+  function handleDupesConfirm() {
+    const entries = dupesItems.map(({ card, removeCount }) => ({ id: card.player_id, count: removeCount }));
+    bulkRemoveOwned(entries);
+    for (const row of dupesPreview) addGems(row.tier, row.gems);
+    onCardsDecrafted(dupesCount);
+    setBulkConfirm(null);
+  }
+
+  function handleSelectionConfirm() {
+    const entries = selectionItems.map(({ card }) => ({ id: card.player_id, count: 1 }));
+    bulkRemoveOwned(entries);
+    for (const row of selectionPreview) addGems(row.tier, row.gems);
+    onCardsDecrafted(selectionItems.length);
+    setBulkConfirm(null);
+    exitSelectMode();
+  }
+
+  const hasActiveFilter = !!(rarityFilter || categoryFilter || tierFilter || countryFilter);
   const totalPages = Math.ceil(filteredAll.length / PAGE_SIZE);
 
   function applyFilter(fn: () => void) { fn(); setPage(0); }
@@ -472,10 +679,10 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
           options={categoryOptions}
         />
         <FilterDropdown
-          value={teamFilter}
-          onChange={(v) => applyFilter(() => setTeamFilter(v))}
-          placeholder="TEAM"
-          options={teamOptions}
+          value={tierFilter}
+          onChange={(v) => applyFilter(() => setTierFilter(v as GemTierKey | ""))}
+          placeholder="TIER"
+          options={TIER_OPTIONS}
         />
         {countryOptions.length > 0 && (
           <FilterDropdown
@@ -487,7 +694,7 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
         )}
         {hasActiveFilter && (
           <button
-            onClick={() => { setRarityFilter(""); setCategoryFilter(""); setTeamFilter(""); setCountryFilter(""); }}
+            onClick={() => { setRarityFilter(""); setCategoryFilter(""); setTierFilter(""); setCountryFilter(""); }}
             style={{
               flexShrink: 0,
               padding: "7px 9px",
@@ -511,8 +718,66 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
         title="Mes cartes"
         count={mineCards.length}
         expanded={mineExpanded}
-        onToggle={() => setMineExpanded((v) => !v)}
+        onToggle={() => { setMineExpanded((v) => !v); if (selectMode) exitSelectMode(); }}
       />
+
+      {/* Action row — bulk tools */}
+      {mineExpanded && allMineCards.length > 0 && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "8px 14px",
+          background: "rgba(255,255,255,0.02)",
+          borderBottom: `1px solid ${C.border}`,
+          flexShrink: 0,
+        }}>
+          {selectMode ? (
+            <>
+              <span style={{ flex: 1, fontFamily: F.mono, fontSize: 9, fontWeight: 800, color: C.teal, letterSpacing: "0.06em" }}>
+                {selectedIds.size} sélectionnée{selectedIds.size > 1 ? "s" : ""}
+              </span>
+              <button
+                onClick={exitSelectMode}
+                style={{
+                  padding: "5px 11px", borderRadius: 7,
+                  background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)",
+                  fontFamily: F.mono, fontSize: 8, fontWeight: 800, color: C.muted,
+                  cursor: "pointer", touchAction: "manipulation", letterSpacing: "0.06em",
+                }}
+              >
+                ✕ ANNULER
+              </button>
+            </>
+          ) : (
+            <>
+              {dupesCount > 0 && (
+                <button
+                  onClick={() => setBulkConfirm("dupes")}
+                  style={{
+                    padding: "5px 11px", borderRadius: 7,
+                    background: "rgba(184,80,96,0.12)", border: `1px solid ${C.crimson}66`,
+                    fontFamily: F.mono, fontSize: 8, fontWeight: 800, color: C.crimson,
+                    cursor: "pointer", touchAction: "manipulation", letterSpacing: "0.06em",
+                  }}
+                >
+                  DOUBLONS ×{dupesCount}
+                </button>
+              )}
+              <button
+                onClick={() => setSelectMode(true)}
+                style={{
+                  padding: "5px 11px", borderRadius: 7,
+                  background: "rgba(109,181,196,0.1)", border: `1px solid ${C.teal}55`,
+                  fontFamily: F.mono, fontSize: 8, fontWeight: 800, color: C.teal,
+                  cursor: "pointer", touchAction: "manipulation", letterSpacing: "0.06em",
+                }}
+              >
+                SÉLECTIONNER
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {mineExpanded && (
         mineCards.length === 0 ? (
           <div style={{ padding: "32px 24px", textAlign: "center" }}>
@@ -525,17 +790,45 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
           </div>
         ) : (
           <div style={{ padding: "8px 14px 0", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, justifyItems: "center" }}>
-            {mineCards.map((c) => (
-              <MiniCard
-                key={c.player_id}
-                p={{ name: c.name, overall: c.overall, role: c.role, team: c.team, teamShort: c.teamShort, imageUrl: c.image_url, noPhoto: c.no_photo, nationality: c.nationality, imageOffset: c.image_offset }}
-                tier={c.tier}
-                count={ownedCounts[c.player_id]}
-                w={cardW}
-                h={cardH}
-                onClick={() => setSelected(c)}
-              />
-            ))}
+            {mineCards.map((c) => {
+              const isSelected = selectedIds.has(c.player_id);
+              return (
+                <div
+                  key={c.player_id}
+                  style={{ position: "relative", cursor: "pointer" }}
+                  onClick={() => selectMode ? toggleSelect(c.player_id) : setSelected(c)}
+                >
+                  <MiniCard
+                    p={{ name: c.name, overall: c.overall, role: c.role, team: c.team, teamShort: c.teamShort, imageUrl: c.image_url, noPhoto: c.no_photo, nationality: c.nationality, imageOffset: c.image_offset }}
+                    tier={c.tier}
+                    count={ownedCounts[c.player_id]}
+                    w={cardW}
+                    h={cardH}
+                    onClick={undefined}
+                  />
+                  {selectMode && (
+                    <div style={{
+                      position: "absolute", inset: 0, borderRadius: 8, pointerEvents: "none",
+                      border: isSelected ? `2px solid ${C.teal}` : `2px solid rgba(255,255,255,0.14)`,
+                      background: isSelected ? `rgba(109,181,196,0.15)` : "rgba(0,0,0,0.18)",
+                      transition: "all 0.1s",
+                    }}>
+                      <div style={{
+                        position: "absolute", top: 5, right: 5,
+                        width: 18, height: 18, borderRadius: "50%",
+                        background: isSelected ? C.teal : "rgba(255,255,255,0.12)",
+                        border: isSelected ? "none" : "1px solid rgba(255,255,255,0.3)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 10, color: isSelected ? "#000" : "transparent",
+                        fontWeight: 800, transition: "all 0.1s",
+                      }}>
+                        ✓
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )
       )}
@@ -609,6 +902,29 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
       {/* Bottom spacer */}
       <div style={{ height: 16, flexShrink: 0 }} />
 
+      {/* Floating selection action bar */}
+      {selectMode && selectedIds.size > 0 && (
+        <div style={{
+          position: "fixed", bottom: 72, left: "50%", transform: "translateX(-50%)",
+          zIndex: 310, width: "calc(100% - 32px)", maxWidth: 398,
+          padding: "0 16px",
+        }}>
+          <button
+            onClick={() => setBulkConfirm("selection")}
+            style={{
+              width: "100%", padding: "14px 0", borderRadius: 12,
+              background: `linear-gradient(135deg, rgba(184,80,96,0.45), rgba(184,80,96,0.25))`,
+              border: `1px solid ${C.crimson}`,
+              color: "#ff8090", fontFamily: F.body, fontSize: 13, fontWeight: 800,
+              letterSpacing: "0.05em", cursor: "pointer", touchAction: "manipulation",
+              boxShadow: "0 4px 24px rgba(0,0,0,0.6)",
+            }}
+          >
+            DÉCRAFT · {selectedIds.size} carte{selectedIds.size > 1 ? "s" : ""}
+          </button>
+        </div>
+      )}
+
       {/* Detail modal */}
       <CardDetailModal
         card={
@@ -633,6 +949,26 @@ export default function CollectionGrid({ cards, lootPoolCountries }: { cards: Ca
         ownedCount={selected ? (ownedCounts[selected.player_id] ?? 0) : 0}
         onClose={() => setSelected(null)}
       />
+
+      {/* Bulk uncraft modals */}
+      {bulkConfirm === "dupes" && (
+        <BulkUncraftModal
+          title="Décraft doublons"
+          cardCount={dupesCount}
+          preview={dupesPreview}
+          onConfirm={handleDupesConfirm}
+          onCancel={() => setBulkConfirm(null)}
+        />
+      )}
+      {bulkConfirm === "selection" && (
+        <BulkUncraftModal
+          title="Décraft sélection"
+          cardCount={selectedIds.size}
+          preview={selectionPreview}
+          onConfirm={handleSelectionConfirm}
+          onCancel={() => setBulkConfirm(null)}
+        />
+      )}
     </div>
   );
 }
