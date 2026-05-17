@@ -318,11 +318,13 @@ Séquence en 3 phases déclenchée par "Ouvrir →" sur un pack prêt.
 - 5 cartes en éventail jaillissent depuis le centre
 
 **Phase 2 — roue × 5 cartes (6.5s/carte)**
-- Roulette horizontale style CS:GO case opening — strip de ~85 tiles défile
-- Toutes les tiles sont identiques pendant le spin (même taille 64×94, pas de nom) → pas de spoiler
+- Roulette horizontale style CS:GO case opening — strip de ~85 tiles défile (pool aléatoire à chaque spin)
+- Tiles 64×94px uniforme pendant le spin — identité cachée (photo + nom + rôle à `opacity:0`, rayures visibles) → pas de spoiler
+- Tile cible : même taille que les autres, glow légèrement plus fort, identité révélée uniquement au landing
 - Décélération cubic-bezier(0.05, 0.85, 0.08, 1) avec jitter final ±12px
-- Sons Web Audio synthétisés : ticks métalliques qui ralentissent + volume qui monte progressivement (quasi silencieux au démarrage → punchy à l'atterrissage) + landing par rareté (thud basique Bronze → chord majeur + cascade cloches ICON)
-- 350ms après l'atterrissage : `csv-tile--winner` (glow fort + nom révélé) + flash de landing
+- Ticks : sample `csgo-tick-a.wav` joué à chaque tile qui passe le centre, timing calculé par inversion numérique de la courbe d'easing. Drama (volume + pitch) monte sur les 12 derniers ticks avant le landing.
+- Landing par rareté (`playLanding`) : même WAV `card-appear.wav` traité différemment par tier (Bronze = flat/sombre → Icon = pitched up + shimmer + cascade)
+- Au landing : `.csv-tile--landed` → fade-in photo/nom/rôle (250ms) + fade-out rayures + flash scale 1.08
 
 **Phase 3 — flip reveal (par carte, auto-avancement)**
 - La carte apparaît en grand (200×295px) avec animation rotateY(-90deg → 0deg) + léger overshoot à 6° + translateY(40px → 0)
@@ -426,11 +428,10 @@ scheduleTick :
   t0 = (freq - 1700) / 700
 
 spinWheel :
-  drama = Max(0, 8 - remaining) / 8    ← commence 8 ticks avant le landing
-  freq  = 1700 + drama * 400            ← pitch rise léger vers la fin
+  drama = Max(0, 12 - remaining) / 12  ← commence 12 ticks avant le landing
   vol   = 0.14 + drama * 0.18          ← quasi-silencieux au début → 0.32 au landing
-  dernier tick (remaining=1) : vol × 0.65
   gap minimum entre ticks : 22ms
+  timing : inverse numérique de cubic-bezier(0.05, 0.85, 0.08, 1) via bisection (28 itérations)
 ```
 
 ---
@@ -497,24 +498,25 @@ Fallback openPack (si _packAppearBuf null) : 3 scheduleTick + schedulePackTear +
 ```
 Timing WAV :
   0–400ms    : silence
-  400–700ms  : petit click (rms ~188) — utilisé pour Bronze/Silver
+  400–700ms  : petit click (rms ~188)
   700ms–1.4s : silence
-  1550–1700ms: pic principal (rms ~1696) — utilisé pour Gold/Diamond/Icon
+  1550–1700ms: pic principal (rms ~1696)
   1700ms+    : longue décroissance
 
-Variants par rareté (playLanding) :
-  BRONZE  → offset 0.38s, rate ×0.75, vol 0.50               (petit click, sombre)
-  SILVER  → offset 0.38s, rate ×0.90, vol 0.65               (petit click, légèrement plus brillant)
-  GOLD    → offset 1.50s, rate ×1.00, vol 0.80 + shimmer
-  DIAMOND → offset 1.45s, rate ×1.10, vol 1.00 + shimmer     (plus de buildup)
-  ICON    → offset 1.35s, rate ×1.25, vol 1.15 + shimmer     (max buildup + pitch)
+Tous les tiers sautent directement au boom (offset ≥ 1.35s) — le petit click initial est skippé.
+
+Variants par rareté (playLanding) — implémentés via offset dans src.start(t, offset) :
+  BRONZE  → offset 1.50s, rate ×0.92, brightness −10  (boom sombre)
+  SILVER  → offset 1.50s, rate ×1.00, brightness −5   (boom neutre)
+  GOLD    → offset 1.50s, rate ×1.00, highpass 80Hz
+  DIAMOND → offset 1.45s, rate ×1.06, highpass 120Hz, brightness +5 + shimmer
+  ICON    → offset 1.35s, rate ×1.12, highpass 140Hz, brightness +8 + cascade 4 échantillons + 2 shimmers
 
 Timing collision fix :
-  playLanding déclenché à duration/1000 + 0.35s (était +0.02s)
-  → 350ms de gap entre le dernier tick et le son de reveal
+  playLanding déclenché à duration/1000 + 0.02s (juste après le dernier tick)
 ```
 
-Fallback playLanding (si _cardAppearBuf null) : synthèse originale conservée par rareté.
+Fallback playLanding (si _cardBuffer null) : synthèse par rareté.
 
 ### Collection — cartes possédées (localStorage)
 - `app/lib/owned.ts` — store client basé sur les **counts** (pas un Set) :

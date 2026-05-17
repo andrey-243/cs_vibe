@@ -1,7 +1,7 @@
-// CS Vibe — Pack & Wheel reveal animations · TypeScript port of reveal.js
+// CS Vibe — Pack & Wheel reveal animations · TypeScript
 // No deps. All browser APIs called inside functions, safe to import in SSR.
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface RevealCard {
   tier: string;
@@ -21,7 +21,7 @@ export interface RevealCard {
     trading: number;
     impact: number;
   };
-  /** true = first copy ever obtained (set at pack-open time, before addOwnedIds) */
+  /** true = first copy ever obtained */
   isNew?: boolean;
   /** copies owned before this pack opened */
   stockCount?: number;
@@ -31,6 +31,11 @@ export interface RevealCard {
 export interface OpenPackOpts {
   container: HTMLElement;
   label?: string;
+  variant?: "v1" | "case";
+  topLeft?: string;
+  topRight?: string;
+  bottomLeft?: string;
+  bottomRight?: string;
   previewCards?: RevealCard[];
   onComplete?: () => void;
 }
@@ -44,45 +49,14 @@ export interface SpinWheelOpts {
   onComplete?: (card: RevealCard) => void;
 }
 
-// ─── Audio ──────────────────────────────────────────────────────────────────
+// ─── Audio ───────────────────────────────────────────────────────────────────
 
-// Two alternating tick samples: A = low (heavy click), B = high (bright click)
+let _packBuffer: AudioBuffer | null = null;
+let _packBufferPromise: Promise<AudioBuffer | null> | null = null;
+let _cardBuffer: AudioBuffer | null = null;
+let _cardBufferPromise: Promise<AudioBuffer | null> | null = null;
 let _tickBufA: AudioBuffer | null = null;
-let _tickBufB: AudioBuffer | null = null;
-let _packAppearBuf: AudioBuffer | null = null;
-let _cardAppearBuf: AudioBuffer | null = null;
-let _tickLoadPromise: Promise<void> | null = null;
-let _tickToggle = false;
-
-function preloadTickBuffer(): Promise<void> {
-  // Reset if previous attempt loaded nothing (getAudio was null — no user gesture yet)
-  if (_tickLoadPromise && !_tickBufA && !_packAppearBuf && !_cardAppearBuf) {
-    _tickLoadPromise = null;
-  }
-  if (_tickLoadPromise) return _tickLoadPromise;
-  _tickLoadPromise = (async () => {
-    try {
-      const ctx = getAudio();
-      if (!ctx) return;
-      const [respA, respB, respPack, respCard] = await Promise.all([
-        fetch("/sounds/csgo-tick-a.wav"),
-        fetch("/sounds/csgo-tick-b.wav"),
-        fetch("/sounds/pack-appear.wav"),
-        fetch("/sounds/card-appear.wav"),
-      ]);
-      if (respA.ok) _tickBufA = await ctx.decodeAudioData(await respA.arrayBuffer());
-      if (respB.ok) _tickBufB = await ctx.decodeAudioData(await respB.arrayBuffer());
-      if (respPack.ok) _packAppearBuf = await ctx.decodeAudioData(await respPack.arrayBuffer());
-      if (respCard.ok) _cardAppearBuf = await ctx.decodeAudioData(await respCard.arrayBuffer());
-    } catch {
-      // silent fail → synthesis fallback
-    }
-  })();
-  return _tickLoadPromise;
-}
-
-export { preloadTickBuffer };
-
+let _tickBufAPromise: Promise<AudioBuffer | null> | null = null;
 let _audioCtx: AudioContext | null = null;
 let _soundEnabled = true;
 
@@ -92,8 +66,7 @@ function getAudio(): AudioContext | null {
   if (!_audioCtx) {
     const Ctx =
       window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!Ctx) return null;
     _audioCtx = new Ctx();
   }
@@ -101,127 +74,113 @@ function getAudio(): AudioContext | null {
   return _audioCtx;
 }
 
-interface TickOpts {
-  freq?: number;
-  freqEnd?: number; // kept for API compat, ignored
-  dur?: number;
-  vol?: number;
+function loadPackSample(): Promise<AudioBuffer | null> {
+  if (_packBuffer) return Promise.resolve(_packBuffer);
+  if (_packBufferPromise) return _packBufferPromise;
+  const ctx = getAudio();
+  if (!ctx) return Promise.resolve(null);
+  _packBufferPromise = fetch("/sounds/pack-appear.wav")
+    .then((r) => r.arrayBuffer())
+    .then((ab) => new Promise<AudioBuffer>((res, rej) => ctx.decodeAudioData(ab, res, rej)))
+    .then((buf) => { _packBuffer = buf; return buf; })
+    .catch(() => null);
+  return _packBufferPromise;
 }
 
-// scheduleTick: sample-based (WAV) with synthesis fallback
-function scheduleTick(when: number, opts?: TickOpts) {
+function loadCardSample(): Promise<AudioBuffer | null> {
+  if (_cardBuffer) return Promise.resolve(_cardBuffer);
+  if (_cardBufferPromise) return _cardBufferPromise;
   const ctx = getAudio();
-  if (!ctx) return;
-  const { freq = 1800, vol = 1.2 } = opts ?? {};
+  if (!ctx) return Promise.resolve(null);
+  _cardBufferPromise = fetch("/sounds/card-appear.wav")
+    .then((r) => r.arrayBuffer())
+    .then((ab) => ctx.decodeAudioData(ab))
+    .then((buf) => { _cardBuffer = buf; return buf; })
+    .catch(() => null);
+  return _cardBufferPromise;
+}
+
+function loadTickSample(): Promise<AudioBuffer | null> {
+  if (_tickBufA) return Promise.resolve(_tickBufA);
+  if (_tickBufAPromise) return _tickBufAPromise;
+  const ctx = getAudio();
+  if (!ctx) return Promise.resolve(null);
+  _tickBufAPromise = fetch("/sounds/csgo-tick-a.wav")
+    .then((r) => r.arrayBuffer())
+    .then((ab) => ctx.decodeAudioData(ab))
+    .then((buf) => { _tickBufA = buf; return buf; })
+    .catch(() => null);
+  return _tickBufAPromise;
+}
+
+/** Preload card landing sample (call on page mount where wheel is likely) */
+export function preloadLanding(): Promise<AudioBuffer | null> {
+  return loadCardSample();
+}
+
+/** Preloads all audio samples (pack, card, tick) */
+export async function preloadTickBuffer(): Promise<void> {
+  await Promise.all([loadPackSample(), loadCardSample(), loadTickSample()]);
+}
+
+// ─── Audio primitives ────────────────────────────────────────────────────────
+
+interface CardSampleOpts {
+  rate?: number;
+  gain?: number;
+  offset?: number; // buffer start offset in seconds (skips silence/click intro)
+  lowpass?: number | null;
+  highpass?: number | null;
+  brightness?: number; // highshelf gain in dB — negative = dull, positive = sparkle
+}
+
+function playCardSample(when: number, opts: CardSampleOpts = {}) {
+  const ctx = getAudio();
+  if (!ctx || !_cardBuffer) return;
+  const { rate = 1, gain = 1, offset = 0, lowpass = null, highpass = null, brightness = 0 } = opts;
   const t = ctx.currentTime + when;
 
-  if (_tickBufA || _tickBufB) {
-    // ── Double-click ratchet: A = main impact, B = resonance 12ms later ──
-    const t0 = (freq - 1700) / 700; // 0 at slow, 1 at fast
-    const playBuf = (buf: AudioBuffer, when: number, rate: number, gain: number) => {
-      const src = ctx!.createBufferSource();
-      src.buffer = buf;
-      src.playbackRate.value = Math.max(0.5, Math.min(5.0, rate));
-      const g = ctx!.createGain();
-      g.gain.setValueAtTime(gain, when);
-      src.connect(g).connect(ctx!.destination);
-      src.start(when);
-    };
-    // A only — pitch rises slightly over 20ms (metal resonance chirp)
-    if (_tickBufA) {
-      const src = ctx.createBufferSource();
-      src.buffer = _tickBufA;
-      const rateStart = 1.5 + t0 * 0.5;   // 1.5 fast → 2.0 slow/landing
-      const rateEnd   = rateStart * 1.15; // +15% pitch chirp per tick
-      src.playbackRate.setValueAtTime(rateStart, t);
-      src.playbackRate.linearRampToValueAtTime(rateEnd, t + 0.022);
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(vol, t);
-      src.connect(g).connect(ctx.destination);
-      src.start(t);
-    }
-    return;
+  const src = ctx.createBufferSource();
+  src.buffer = _cardBuffer;
+  src.playbackRate.value = rate;
+
+  let node: AudioNode = src;
+  if (highpass != null) {
+    const hp = ctx.createBiquadFilter();
+    hp.type = "highpass";
+    hp.frequency.value = highpass;
+    node.connect(hp);
+    node = hp;
+  }
+  if (lowpass != null) {
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = lowpass;
+    node.connect(lp);
+    node = lp;
+  }
+  if (brightness !== 0) {
+    const sh = ctx.createBiquadFilter();
+    sh.type = "highshelf";
+    sh.frequency.value = 2500;
+    sh.gain.value = brightness;
+    node.connect(sh);
+    node = sh;
   }
 
-  // ── Synthesis fallback (if WAV not loaded) ────────────────────────────────
-  const dur = 0.008;
-  function noiseBuf(ms: number, decay: number) {
-    const len = Math.ceil(ms * 0.001 * ctx!.sampleRate);
-    const buf = ctx!.createBuffer(1, len, ctx!.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++)
-      d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (d.length * decay));
-    return buf;
-  }
-  const osc = ctx.createOscillator();
-  osc.type = "sine";
-  osc.frequency.value = freq;
-  const oscG = ctx.createGain();
-  oscG.gain.setValueAtTime(vol * 0.6, t);
-  oscG.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-  osc.connect(oscG).connect(ctx.destination);
-  osc.start(t); osc.stop(t + dur + 0.001);
-  const clkSrc = ctx.createBufferSource();
-  clkSrc.buffer = noiseBuf(4, 0.08);
-  const clkBP = ctx.createBiquadFilter();
-  clkBP.type = "bandpass"; clkBP.frequency.value = 4000; clkBP.Q.value = 3.5;
-  const clkG = ctx.createGain();
-  clkG.gain.setValueAtTime(vol * 0.8, t);
-  clkG.gain.exponentialRampToValueAtTime(0.0001, t + 0.005);
-  clkSrc.connect(clkBP).connect(clkG).connect(ctx.destination);
-  clkSrc.start(t);
+  const g = ctx.createGain();
+  g.gain.value = gain;
+  node.connect(g).connect(ctx.destination);
+  src.start(t, offset);
 }
 
-function scheduleThud(when: number, vol = 0.4) {
-  const ctx = getAudio();
-  if (!ctx) return;
-  const t = ctx.currentTime + when;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(180, t);
-  osc.frequency.exponentialRampToValueAtTime(50, t + 0.25);
-  gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(vol, t + 0.005);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(t);
-  osc.stop(t + 0.4);
-}
-
-interface ToneOpts {
-  when: number;
-  type?: OscillatorType;
-  freqStart: number;
-  freqEnd?: number;
-  duration: number;
-  volume: number;
-}
-
-function _tone({ when, type = "sine", freqStart, freqEnd, duration, volume }: ToneOpts) {
-  const ctx = getAudio();
-  if (!ctx) return;
-  const t = ctx.currentTime + when;
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freqStart, t);
-  if (freqEnd != null && freqEnd !== freqStart)
-    osc.frequency.exponentialRampToValueAtTime(Math.max(20, freqEnd), t + duration);
-  gain.gain.setValueAtTime(0.0001, t);
-  gain.gain.exponentialRampToValueAtTime(volume, t + 0.006);
-  gain.gain.exponentialRampToValueAtTime(0.0001, t + duration);
-  osc.connect(gain).connect(ctx.destination);
-  osc.start(t);
-  osc.stop(t + duration + 0.05);
-}
-
+// Noise shimmer tail — bandpassed noise sweep (no oscillators).
 function _shimmer({ when, duration = 0.4, volume = 0.12 }: { when: number; duration?: number; volume?: number }) {
   const ctx = getAudio();
   if (!ctx) return;
   const t = ctx.currentTime + when;
   const src = ctx.createBufferSource();
-  const buf = ctx.createBuffer(1, duration * ctx.sampleRate, ctx.sampleRate);
+  const buf = ctx.createBuffer(1, Math.ceil(duration * ctx.sampleRate), ctx.sampleRate);
   const d = buf.getChannelData(0);
   for (let i = 0; i < d.length; i++) {
     const p = i / d.length;
@@ -240,83 +199,47 @@ function _shimmer({ when, duration = 0.4, volume = 0.12 }: { when: number; durat
   src.start(t);
 }
 
-export function playLanding(tier: string, when = 0) {
+// ─── Tick sounds (wheel spin) ─────────────────────────────────────────────────
+// drama: 0 = early fast tick (quiet/low pitch), 1 = last tick before landing (loud/high)
+
+function scheduleTick(when: number, drama: number) {
   const ctx = getAudio();
-  if (!ctx) return;
-
-  if (_cardAppearBuf) {
-    // WAV-based — per-rarity: offset into WAV + rate + vol
-    // WAV structure: small click at ~420ms, main impact at ~1550ms, long tail
-    const profiles: Record<string, { offset: number; rate: number; vol: number; shimmer?: boolean }> = {
-      BRONZE:  { offset: 1.50, rate: 0.75, vol: 0.50 },
-      SILVER:  { offset: 1.50, rate: 0.88, vol: 0.65 },
-      GOLD:    { offset: 1.50, rate: 1.00, vol: 0.80, shimmer: true },
-      DIAMOND: { offset: 1.50, rate: 1.10, vol: 1.00, shimmer: true },
-      ICON:    { offset: 1.50, rate: 1.25, vol: 1.15, shimmer: true },
-    };
-    const p = profiles[tier] ?? profiles.BRONZE;
-    const t = ctx.currentTime + when;
-    const src = ctx.createBufferSource();
-    src.buffer = _cardAppearBuf;
-    src.playbackRate.value = p.rate;
-    const g = ctx.createGain();
-    g.gain.setValueAtTime(p.vol, t);
-    src.connect(g).connect(ctx.destination);
-    src.start(t, p.offset);
-    // keep shimmer layer on top for premium rarities
-    if (p.shimmer) {
-      const shimmerDur = tier === "ICON" ? 0.85 : 0.5;
-      _shimmer({ when: when + 0.05, duration: shimmerDur, volume: tier === "ICON" ? 0.16 : 0.08 });
-    }
-    return;
-  }
-
-  // ── Synthesis fallback ────────────────────────────────────────────────────
-  const profiles: Record<string, () => void> = {
-    BRONZE() {
-      _tone({ when, type: "sine", freqStart: 150, freqEnd: 45, duration: 0.28, volume: 0.28 });
-      _tone({ when: when + 0.01, type: "triangle", freqStart: 500, freqEnd: 300, duration: 0.08, volume: 0.08 });
-    },
-    SILVER() {
-      _tone({ when, type: "sine", freqStart: 180, freqEnd: 55, duration: 0.3, volume: 0.32 });
-      _tone({ when: when + 0.02, type: "triangle", freqStart: 880, freqEnd: 660, duration: 0.14, volume: 0.11 });
-    },
-    GOLD() {
-      _tone({ when, type: "sine", freqStart: 210, freqEnd: 65, duration: 0.35, volume: 0.36 });
-      _tone({ when: when + 0.02, type: "triangle", freqStart: 1175, freqEnd: 880, duration: 0.18, volume: 0.18 });
-      _tone({ when: when + 0.08, type: "sine", freqStart: 1568, freqEnd: 1320, duration: 0.3, volume: 0.13 });
-      _shimmer({ when: when + 0.04, duration: 0.25, volume: 0.05 });
-    },
-    DIAMOND() {
-      _tone({ when, type: "sine", freqStart: 240, freqEnd: 70, duration: 0.42, volume: 0.4 });
-      [1318.5, 1760.0, 2349.3].forEach((f, i) => {
-        _tone({ when: when + 0.06 + i * 0.07, type: "sine", freqStart: f, freqEnd: f * 0.95, duration: 0.32, volume: 0.16 });
-      });
-      _shimmer({ when: when + 0.05, duration: 0.5, volume: 0.1 });
-    },
-    ICON() {
-      _tone({ when, type: "sine", freqStart: 75, freqEnd: 22, duration: 0.7, volume: 0.55 });
-      _tone({ when, type: "sine", freqStart: 160, freqEnd: 50, duration: 0.55, volume: 0.32 });
-      [261.6, 329.6, 392.0, 587.3].forEach((f) => {
-        _tone({ when: when + 0.05, type: "sine", freqStart: f, freqEnd: f, duration: 0.75, volume: 0.16 });
-        _tone({ when: when + 0.05, type: "triangle", freqStart: f * 2, freqEnd: f * 2, duration: 0.5, volume: 0.07 });
-      });
-      [2637, 2349, 2093, 1864, 1568].forEach((f, i) => {
-        _tone({ when: when + 0.2 + i * 0.07, type: "sine", freqStart: f, freqEnd: f * 0.95, duration: 0.42, volume: 0.13 });
-      });
-      _shimmer({ when: when + 0.05, duration: 0.85, volume: 0.16 });
-    },
-  };
-  (profiles[tier] ?? profiles.BRONZE)();
+  if (!ctx || !_tickBufA) return;
+  const rateStart = 1.5 + drama * 0.286; // 1.5 → 1.786
+  const rateEnd   = rateStart * 1.15;    // +15% chirp over 22ms
+  const vol       = 0.14 + drama * 0.18; // 0.14 → 0.32
+  const src = ctx.createBufferSource();
+  src.buffer = _tickBufA;
+  src.playbackRate.setValueAtTime(rateStart, when);
+  src.playbackRate.linearRampToValueAtTime(rateEnd, when + 0.022);
+  const g = ctx.createGain();
+  g.gain.value = vol;
+  src.connect(g).connect(ctx.destination);
+  src.start(when);
 }
 
+// Inverse of CSS cubic-bezier(0.05, 0.85, 0.08, 1):
+// given a progress value (0–1), return the time fraction (0–1) at which it occurs.
+function progressToTimeFrac(progress: number): number {
+  const y1 = 0.85, y2 = 1.0, x1 = 0.05, x2 = 0.08;
+  let lo = 0, hi = 1;
+  for (let i = 0; i < 28; i++) {
+    const t = (lo + hi) / 2;
+    const y = 3*(1-t)*(1-t)*t*y1 + 3*(1-t)*t*t*y2 + t*t*t;
+    y < progress ? (lo = t) : (hi = t);
+  }
+  const t = (lo + hi) / 2;
+  return 3*(1-t)*(1-t)*t*x1 + 3*(1-t)*t*t*x2 + t*t*t;
+}
+
+// Pack tear noise (synthesis fallback for pack opening).
 function schedulePackTear(when: number, vol = 0.25) {
   const ctx = getAudio();
   if (!ctx) return;
   const t = ctx.currentTime + when;
   const dur = 0.35;
   const src = ctx.createBufferSource();
-  const buf = ctx.createBuffer(1, dur * ctx.sampleRate, ctx.sampleRate);
+  const buf = ctx.createBuffer(1, Math.ceil(dur * ctx.sampleRate), ctx.sampleRate);
   const d = buf.getChannelData(0);
   for (let i = 0; i < d.length; i++) {
     const p = i / d.length;
@@ -335,59 +258,119 @@ function schedulePackTear(when: number, vol = 0.25) {
   src.start(t);
 }
 
-// ─── Cubic-bezier inverse (Newton's method) ─────────────────────────────────
+// ─── playLanding — sample-based, escalating satisfaction by tier ─────────────
+//
+// All tiers use the SAME card-appear.wav processed differently:
+//   BRONZE  — pitched normal, high-shelf cut −10dB → flat, disappointing
+//   SILVER  — pitched normal, high-shelf cut −5dB  → between bronze and gold
+//   GOLD    — pitched normal, highpass 80Hz, brut   → the reference feel
+//   DIAMOND — pitched up ×1.06, highshelf +5dB + shimmer tail
+//   ICON    — pitched up ×1.12, highshelf +8dB + sample cascade + double shimmer
 
-function cubicBezierY(x1: number, y1: number, x2: number, y2: number) {
-  return function (xTarget: number) {
-    let t = xTarget;
-    for (let i = 0; i < 10; i++) {
-      const bx = 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t;
-      const dx =
-        3 * (1 - t) * (1 - t) * x1 +
-        6 * (1 - t) * t * (x2 - x1) +
-        3 * t * t * (1 - x2);
-      if (Math.abs(dx) < 1e-6) break;
-      t -= (bx - xTarget) / dx;
-      t = Math.max(0, Math.min(1, t));
-    }
-    return (
-      3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t
-    );
-  };
+export function playLanding(tier: string, when = 0) {
+  const ctx = getAudio();
+  if (!ctx) return;
+
+  if (!_cardBuffer) {
+    loadCardSample().then((buf) => { if (buf) playLanding(tier, 0); });
+    return;
+  }
+
+  switch (tier) {
+    case "BRONZE":
+      playCardSample(when, { offset: 1.50, rate: 0.92, gain: 0.90, brightness: -10 });
+      break;
+    case "SILVER":
+      playCardSample(when, { offset: 1.50, rate: 1.0,  gain: 0.95, brightness: -5 });
+      break;
+    case "GOLD":
+      playCardSample(when, { offset: 1.50, rate: 1.0,  gain: 1.0,  highpass: 80 });
+      break;
+    case "DIAMOND":
+      playCardSample(when, { offset: 1.45, rate: 1.06, gain: 1.0,  highpass: 120, brightness: 5 });
+      _shimmer({ when: when + 0.06, duration: 0.55, volume: 0.08 });
+      break;
+    case "ICON":
+      playCardSample(when, { offset: 1.35, rate: 1.12, gain: 1.0,  highpass: 140, brightness: 8 });
+      [
+        { dt: 0.11, rate: 1.50, gain: 0.45, highpass: 800,  brightness: 6 },
+        { dt: 0.22, rate: 2.00, gain: 0.32, highpass: 1400, brightness: 6 },
+        { dt: 0.34, rate: 2.50, gain: 0.22, highpass: 2000, brightness: 5 },
+        { dt: 0.46, rate: 3.00, gain: 0.14, highpass: 2600, brightness: 4 },
+      ].forEach((c) =>
+        playCardSample(when + c.dt, { offset: 1.35, rate: c.rate, gain: c.gain, highpass: c.highpass, brightness: c.brightness })
+      );
+      _shimmer({ when: when + 0.06, duration: 1.2, volume: 0.13 });
+      _shimmer({ when: when + 0.35, duration: 0.9, volume: 0.08 });
+      break;
+    default:
+      playCardSample(when, { offset: 1.50, rate: 1.0, gain: 0.90, brightness: -10 });
+  }
 }
 
-// ─── Rarity palette (must match reveal CSS classes) ─────────────────────────
+// ─── Rarity palette (aligned with frontend/app/lib/tokens.ts) ────────────────
 
-const RARITY: Record<string, { from: string; to: string; glow: string; label: string }> = {
-  BRONZE:  { from: "#a06a3b", to: "#3e2510", glow: "rgba(160,106,59,0.4)",   label: "#e0c6a3" },
-  SILVER:  { from: "#aab4c0", to: "#3e4654", glow: "rgba(170,180,192,0.45)", label: "#e6ebf2" },
-  GOLD:    { from: "#e8b94a", to: "#7a5b1a", glow: "rgba(232,185,74,0.5)",   label: "#fff3d2" },
-  DIAMOND: { from: "#8ec5d8", to: "#2a5b6f", glow: "rgba(142,197,216,0.55)", label: "#dff0f7" },
-  ICON:    { from: "#d9b5ff", to: "#3f2860", glow: "rgba(217,181,255,0.65)", label: "#f0e2ff" },
-  LEGACY:  { from: "#8a8a92", to: "#2c2c34", glow: "rgba(138,138,146,0.22)", label: "#cccccd" },
+export const RARITY: Record<string, { from: string; to: string; glow: string; label: string }> = {
+  BRONZE:  { from: "#a06a3b", to: "#3e2510", glow: "rgba(160,106,59,0.22)",  label: "#e0c6a3" },
+  SILVER:  { from: "#aab4c0", to: "#3e4654", glow: "rgba(170,180,192,0.20)", label: "#e6ebf2" },
+  GOLD:    { from: "#c9a565", to: "#6f4d1a", glow: "rgba(201,165,101,0.28)", label: "#f0dba8" },
+  DIAMOND: { from: "#6da4c4", to: "#1f3a5a", glow: "rgba(109,164,196,0.28)", label: "#c4dff0" },
+  ICON:    { from: "#b89cd4", to: "#3f2860", glow: "rgba(184,156,212,0.32)", label: "#e0d2f0" },
+  LEGACY:  { from: "#8a8a92", to: "#2c2c34", glow: "rgba(138,138,146,0.18)", label: "#cccccd" },
 };
 
-export { RARITY };
-
-// ─── Tile factory ────────────────────────────────────────────────────────────
+// ─── Tile factory (mirrors CardPortrait DNA) ─────────────────────────────────
+// Layout: photo zone (top 58%) + dark stats band (bottom 42%)
+// TL: OVR + tier · TR: role · BL: name + team short
 
 function buildTile(card: RevealCard, isTarget: boolean): HTMLElement {
   const r = RARITY[card.tier] ?? RARITY.GOLD;
   const el = document.createElement("div");
   el.className = "csv-tile" + (isTarget ? " csv-tile--target" : "");
   el.style.cssText = `--from:${r.from};--to:${r.to};--glow:${r.glow};--label:${r.label}`;
+
+  const ovr = card.ovr ?? 75;
+  const fir = card.categoryScores ? Math.round(card.categoryScores.firepower) : Math.min(99, ovr + 4);
+  const clu = card.categoryScores ? Math.round(card.categoryScores.clutching) : Math.max(40, ovr - 6);
+  const imp = card.categoryScores ? Math.round(card.categoryScores.impact)    : Math.min(99, ovr + 1);
+  const role = card.role ?? "";
+  const team = (card.teamShort ?? card.team ?? "").toUpperCase();
+  const imgUrl = card.player_id ? `/api/player-image/${card.player_id}` : null;
+
   el.innerHTML = `
-    <div class="csv-tile-sheen"></div>
-    <div>
-      <div class="csv-tile-ovr">${card.ovr != null ? card.ovr : "?"}</div>
-      <div class="csv-tile-tier">${card.tier || "?"}</div>
+    <div class="csv-tile-photo">
+      <div class="csv-tile-stripes"></div>
+      ${imgUrl ? `<img class="csv-tile-image" src="${imgUrl}" alt="" style="object-position:${card.image_offset ?? "top center"}" />` : ""}
+      <div class="csv-tile-fade"></div>
+      <div class="csv-tile-tl">
+        <div class="csv-tile-ovr">${ovr}</div>
+        <div class="csv-tile-tier">${card.tier}</div>
+      </div>
+      ${role ? `<div class="csv-tile-tr">${role}</div>` : ""}
+      ${card.name
+        ? `<div class="csv-tile-name">
+             <div class="csv-tile-name-text">${card.name}</div>
+             ${team ? `<div class="csv-tile-team">${team}</div>` : ""}
+           </div>`
+        : `<div class="csv-tile-tag">${(card.tier || "G")[0]}</div>`}
     </div>
-    ${card.name ? `<div class="csv-tile-name">${card.name}</div>` : ""}
+    <div class="csv-tile-stats">
+      <div><span class="csv-tile-stat-v">${fir}</span><span class="csv-tile-stat-l">FIR</span></div>
+      <div><span class="csv-tile-stat-v">${clu}</span><span class="csv-tile-stat-l">CLU</span></div>
+      <div><span class="csv-tile-stat-v">${imp}</span><span class="csv-tile-stat-l">IMP</span></div>
+    </div>
+    <div class="csv-tile-sheen"></div>
   `;
   return el;
 }
 
-// ─── openPack ────────────────────────────────────────────────────────────────
+// ─── openPack — CS:GO case variant (default) ─────────────────────────────────
+//
+// State machine (aligned with pack-appear.wav envelope):
+//   0ms     → csv-pack--appearing → pack flies in from distance
+//   540ms   → csv-pack--landed    → case settles, lock rattles
+//   710ms   → csv-pack--opening   → lid hinges back, beam erupts, cards rise
+//   1500ms  → resolve             → WAV tail fades, cards fan is visible
 
 const DEFAULT_PREVIEW: RevealCard[] = [
   { tier: "SILVER",  ovr: 78 },
@@ -398,64 +381,140 @@ const DEFAULT_PREVIEW: RevealCard[] = [
 ];
 
 export function openPack(opts: OpenPackOpts): Promise<void> {
-  const { container, label = "DAILY", previewCards = DEFAULT_PREVIEW, onComplete } = opts;
+  const {
+    container,
+    label = "DAILY",
+    variant = "case",
+    topLeft    = "CS·VIBE",
+    topRight   = "№ 001",
+    bottomLeft = "SEALED",
+    bottomRight = "VOL · 005",
+    previewCards = DEFAULT_PREVIEW,
+    onComplete,
+  } = opts;
   if (!container) throw new Error("openPack: container required");
 
   container.classList.add("csv-root");
   const fanRotations = [-32, -16, 0, 16, 32];
 
-  container.innerHTML = `
-    <div class="csv-pack">
-      <div class="csv-pack-rays"></div>
+  const cardSlots = previewCards
+    .map((_, i) => `<div class="csv-pack-card" style="--rot:${fanRotations[i] ?? 0}deg"></div>`)
+    .join("");
+  const particles = [0, 1, 2, 3, 4, 5]
+    .map((i) => `<div class="csv-pack-particle csv-pack-particle-${i}"></div>`)
+    .join("");
+
+  let shellMarkup: string;
+  let packClass: string;
+
+  if (variant === "case") {
+    const sparks = [
+      { dx: "-70px", dy: "58px", ang: "-32deg" },
+      { dx:  "70px", dy: "58px", ang:  "32deg" },
+      { dx: "-30px", dy: "78px", ang: "-12deg" },
+      { dx:  "30px", dy: "78px", ang:  "12deg" },
+    ]
+      .map(
+        (s) =>
+          `<div class="csv-packv2-case-spark" style="--sdx:${s.dx};--sdy:${s.dy};--sang:${s.ang}"></div>`
+      )
+      .join("");
+
+    shellMarkup = `
+      <div class="csv-packv2-body">
+        <div class="csv-packv2-case-front">
+          <div class="csv-packv2-case-marks"><span>${topLeft}</span><span>${topRight}</span></div>
+          <div class="csv-packv2-case-stripe">
+            <div class="csv-packv2-case-stripe-text">${label}</div>
+          </div>
+          <div class="csv-packv2-case-spec"><span>${bottomLeft}</span><span>${bottomRight}</span></div>
+        </div>
+        <div class="csv-packv2-case-innerglow"></div>
+        <div class="csv-packv2-case-beam"></div>
+        <div class="csv-packv2-case-mouth"></div>
+        <div class="csv-packv2-case-lid">
+          <div class="csv-packv2-case-lock"></div>
+        </div>
+        <div class="csv-packv2-case-flash"></div>
+        ${sparks}
+      </div>`;
+    packClass = "csv-pack csv-packv2 csv-packv2--case";
+  } else {
+    // v1 legacy — original two-half tear
+    shellMarkup = `
       <div class="csv-pack-top"><div class="csv-pack-top-label">${label}</div></div>
-      <div class="csv-pack-bottom"></div>
-      <div class="csv-pack-burst"></div>
-      ${previewCards.map((_, i) => `<div class="csv-pack-card" style="--rot:${fanRotations[i] ?? 0}deg"></div>`).join("")}
-      ${[0, 1, 2, 3, 4, 5].map((i) => `<div class="csv-pack-particle csv-pack-particle-${i}"></div>`).join("")}
+      <div class="csv-pack-bottom"></div>`;
+    packClass = "csv-pack";
+  }
+
+  container.innerHTML = `
+    <div class="${packClass}">
+      ${variant === "v1" ? '<div class="csv-pack-rays"></div>' : ""}
+      <div class="csv-pack-shell">${shellMarkup}</div>
+      ${variant === "v1" ? '<div class="csv-pack-burst"></div>' : ""}
+      ${cardSlots}
+      ${particles}
     </div>
   `;
 
-  const pack = container.querySelector(".csv-pack")!;
+  const pack = container.querySelector<HTMLElement>(".csv-pack")!;
   const slots = pack.querySelectorAll<HTMLElement>(".csv-pack-card");
   previewCards.forEach((c, i) => {
     if (slots[i]) slots[i].appendChild(buildTile(c, i === 2));
   });
 
   return new Promise((resolve) => {
-    const audio = getAudio();
-    if (audio) {
-      preloadTickBuffer(); // kick off WAV load during pack animation (2.4s to finish)
-      if (_packAppearBuf) {
-        const src = audio.createBufferSource();
-        src.buffer = _packAppearBuf;
-        const g = audio.createGain();
-        g.gain.setValueAtTime(1.0, audio.currentTime);
-        src.connect(g).connect(audio.destination);
-        // skip 300ms of silence — aligns WAV peak (~750ms) with visual tear (400ms)
-        src.start(audio.currentTime, 0.30);
+    const startAnimation = () => {
+      if (variant === "case") {
+        pack.classList.add("csv-pack--appearing");
+        setTimeout(() => {
+          pack.classList.remove("csv-pack--appearing");
+          pack.classList.add("csv-pack--landed");
+        }, 540);
+        setTimeout(() => {
+          pack.classList.remove("csv-pack--landed");
+          pack.classList.add("csv-pack--opening");
+        }, 710);
+        setTimeout(() => {
+          onComplete?.();
+          resolve();
+        }, 1500);
       } else {
-        // synthesis fallback if WAV not yet loaded
-        scheduleTick(0,    { freq: 1200, vol: 0.1 });
-        scheduleTick(0.15, { freq: 1200, vol: 0.1 });
-        scheduleTick(0.30, { freq: 1200, vol: 0.1 });
-        schedulePackTear(0.40, 0.3);
-        scheduleThud(0.60, 0.3);
+        // v1 legacy timing
+        pack.classList.add("csv-pack--shaking");
+        setTimeout(() => {
+          pack.classList.remove("csv-pack--shaking");
+          pack.classList.add("csv-pack--opening");
+        }, 400);
+        setTimeout(() => {
+          onComplete?.();
+          resolve();
+        }, 2400);
       }
-    }
+    };
 
-    pack.classList.add("csv-pack--shaking");
-    setTimeout(() => {
-      pack.classList.remove("csv-pack--shaking");
-      pack.classList.add("csv-pack--opening");
-    }, 400);
-    setTimeout(() => {
-      onComplete?.();
-      resolve();
-    }, 2400);
+    loadPackSample().then((buf) => {
+      if (buf) {
+        const ctx = getAudio();
+        if (ctx) {
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          const g = ctx.createGain();
+          g.gain.value = 1.0;
+          src.connect(g).connect(ctx.destination);
+          src.start(ctx.currentTime); // play from start — WAV 300ms silence aligns with animation
+        }
+      } else {
+        // synthesis fallback
+        schedulePackTear(0.40, 0.28);
+      }
+      startAnimation();
+    });
   });
 }
 
 // ─── spinWheel ───────────────────────────────────────────────────────────────
+// No ticks during spin. Only landing sound fires at the very end.
 
 const DEFAULT_POOL: RevealCard[] = [
   { tier: "SILVER",  ovr: 76 },
@@ -474,7 +533,7 @@ export function spinWheel(opts: SpinWheelOpts): Promise<RevealCard> {
     container,
     pool = DEFAULT_POOL,
     target = { tier: "GOLD", ovr: 84 },
-    duration = 4500,
+    duration = 5000,
     label = "RÉVÉLATION",
     onComplete,
   } = opts;
@@ -483,10 +542,11 @@ export function spinWheel(opts: SpinWheelOpts): Promise<RevealCard> {
   const TARGET_INDEX = 70;
   const POST_TILES = 14;
 
+  const randCard = () => pool[Math.floor(Math.random() * pool.length)];
   const tiles: RevealCard[] = [];
-  for (let i = 0; i < TARGET_INDEX; i++) tiles.push(pool[i % pool.length]);
+  for (let i = 0; i < TARGET_INDEX; i++) tiles.push(randCard());
   tiles.push(target);
-  for (let i = 0; i < POST_TILES; i++) tiles.push(pool[(i + 3) % pool.length]);
+  for (let i = 0; i < POST_TILES; i++) tiles.push(randCard());
 
   container.classList.add("csv-root");
   container.innerHTML = `
@@ -496,78 +556,70 @@ export function spinWheel(opts: SpinWheelOpts): Promise<RevealCard> {
       <div class="csv-wheel-spotlight"></div>
       <div class="csv-wheel-mask"></div>
       <div class="csv-wheel-strip"></div>
-      <div class="csv-wheel-meter"><div class="csv-wheel-meter-fill"></div></div>
     </div>
   `;
 
   const strip = container.querySelector<HTMLElement>(".csv-wheel-strip")!;
-  const meter = container.querySelector<HTMLElement>(".csv-wheel-meter-fill")!;
-  // All tiles look identical during spin — target has no name and no special size yet
-  tiles.forEach((t, i) => {
-    const card = i === TARGET_INDEX ? { tier: t.tier, ovr: t.ovr } : t;
-    strip.appendChild(buildTile(card, false));
-  });
+
+  // Target tile is visibly larger (csv-tile--target) throughout the spin
+  tiles.forEach((t, i) => strip.appendChild(buildTile(t, i === TARGET_INDEX)));
 
   return new Promise((resolve) => {
-    requestAnimationFrame(() => {
-      const wheel = container.querySelector<HTMLElement>(".csv-wheel")!;
-      const containerW = wheel.clientWidth;
-      const targetTile = strip.children[TARGET_INDEX] as HTMLElement;
-      const tileCenter = targetTile.offsetLeft + targetTile.offsetWidth / 2;
-      const jitter = (Math.random() - 0.5) * 24;
-      const finalX = containerW / 2 - tileCenter + jitter;
-
-      const easing = "cubic-bezier(0.05, 0.85, 0.08, 1)";
-      const invEase = cubicBezierY(0.85, 0.05, 1, 0.08);
-
-      const audio = getAudio();
-      if (audio) {
-        const tickTimes: number[] = [];
-        for (let i = 1; i <= TARGET_INDEX; i++) {
-          const tileEl = strip.children[i] as HTMLElement;
-          const tileC = tileEl.offsetLeft + tileEl.offsetWidth / 2;
-          const txAt_i = containerW / 2 - tileC;
-          const progress = finalX === 0 ? 1 : txAt_i / finalX;
-          if (progress < 0.001 || progress > 1) continue;
-          const tProg = invEase(progress);
-          tickTimes.push(tProg * duration);
-        }
-        const filtered: number[] = [];
-        let last = -Infinity;
-        tickTimes.forEach((t) => {
-          if (t - last >= 22) { filtered.push(t); last = t; }
-        });
-        filtered.forEach((tMs, idx) => {
-          const remaining = filtered.length - idx;
-          const drama = Math.max(0, 8 - remaining) / 8;
-          const freq = 1700 + drama * 400;  // subtle pitch rise toward landing
-          const volBase = 0.14 + drama * 0.18;  // global réduit → 0.32 max
-          const vol = remaining === 1 ? volBase * 0.65 : volBase;  // dernier tick -35%
-          scheduleTick(tMs / 1000, { freq, vol });
-        });
-        playLanding(target.tier ?? "BRONZE", duration / 1000 + 0.35);
-      }
-
+    const startSpin = () => {
       requestAnimationFrame(() => {
-        strip.style.transition = `transform ${duration}ms ${easing}`;
-        strip.style.transform = `translateX(${finalX}px)`;
-        meter.style.transition = `width ${duration}ms ${easing}`;
-        meter.style.width = "100%";
-      });
+        const wheel = container.querySelector<HTMLElement>(".csv-wheel")!;
+        const containerW = wheel.clientWidth;
+        const targetTile = strip.children[TARGET_INDEX] as HTMLElement;
+        const tileCenter = targetTile.offsetLeft + targetTile.offsetWidth / 2;
+        const jitter = (Math.random() - 0.5) * 24;
+        const finalX = containerW / 2 - tileCenter + jitter;
 
-      setTimeout(() => {
-        // Reveal: winner glow + name appear, landing flash plays
-        targetTile.classList.add("csv-tile--winner", "csv-tile--landed");
-        if (target.name) {
-          const nameEl = document.createElement("div");
-          nameEl.className = "csv-tile-name";
-          nameEl.textContent = target.name;
-          targetTile.appendChild(nameEl);
+        const easing = "cubic-bezier(0.05, 0.85, 0.08, 1)";
+        const durSec = duration / 1000;
+
+        // Schedule ticks + landing sound
+        const audio = getAudio();
+        if (audio) {
+          const t0 = audio.currentTime;
+
+          // Ticks: compute when each tile (0 to TARGET_INDEX-1) crosses the wheel center
+          if (_tickBufA) {
+            let lastTickSec = -1;
+            for (let i = 0; i < TARGET_INDEX; i++) {
+              const tile = strip.children[i] as HTMLElement;
+              const tileCenterX = tile.offsetLeft + tile.offsetWidth / 2;
+              const translationNeeded = containerW / 2 - tileCenterX;
+              const progress = translationNeeded / finalX;
+              if (progress <= 0 || progress >= 1) continue;
+              const timeFrac = progressToTimeFrac(progress);
+              const tickSec = timeFrac * durSec;
+              if (tickSec - lastTickSec < 0.022) continue; // min 22ms gap
+              lastTickSec = tickSec;
+              const remaining = TARGET_INDEX - i;
+              const drama = Math.max(0, 12 - remaining) / 12;
+              scheduleTick(t0 + tickSec, drama);
+            }
+          }
+
+          playLanding(target.tier ?? "BRONZE", durSec + 0.02);
         }
-        onComplete?.(target);
-        resolve(target);
-      }, duration);
-    });
+
+        requestAnimationFrame(() => {
+          strip.style.transition = `transform ${duration}ms ${easing}`;
+          strip.style.transform = `translateX(${finalX}px)`;
+        });
+
+        setTimeout(() => {
+          targetTile.classList.add("csv-tile--landed");
+          onComplete?.(target);
+          resolve(target);
+        }, duration);
+      });
+    };
+
+    // Wait for card sample to decode before starting so the very first
+    // landing sound fires without lag
+    loadCardSample().then(startSpin);
   });
 }
 
