@@ -18,14 +18,17 @@ function nextLevelReward(nextLevel: number): string {
 }
 
 export default function TopBar({ major = false }: { major?: boolean }) {
-  const [levelInfo, setLevelInfo] = useState(() => getLevelInfo(getTotalXP()));
+  const [levelInfo, setLevelInfo] = useState(() => getLevelInfo(0));
   const [showGems, setShowGems] = useState(false);
   const [showXP, setShowXP] = useState(false);
-  const [gemCounts, setGemCounts] = useState<Record<string, number>>(() => getGems());
+  const [gemCounts, setGemCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     function syncXP()  { setLevelInfo(getLevelInfo(getTotalXP())); }
     function syncGems() { setGemCounts(getGems()); }
+    // Hydrate from localStorage after mount
+    syncXP();
+    syncGems();
     window.addEventListener("csv-xp-updated", syncXP);
     window.addEventListener("csv-gems-updated", syncGems);
     return () => {

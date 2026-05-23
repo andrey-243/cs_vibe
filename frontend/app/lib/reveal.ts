@@ -57,6 +57,10 @@ let _cardBuffer: AudioBuffer | null = null;
 let _cardBufferPromise: Promise<AudioBuffer | null> | null = null;
 let _tickBufA: AudioBuffer | null = null;
 let _tickBufAPromise: Promise<AudioBuffer | null> | null = null;
+let _bonusClaimBuffer: AudioBuffer | null = null;
+let _bonusClaimBufferPromise: Promise<AudioBuffer | null> | null = null;
+let _questClaimBuffer: AudioBuffer | null = null;
+let _questClaimBufferPromise: Promise<AudioBuffer | null> | null = null;
 let _audioCtx: AudioContext | null = null;
 let _soundEnabled = true;
 
@@ -100,6 +104,32 @@ function loadCardSample(): Promise<AudioBuffer | null> {
   return _cardBufferPromise;
 }
 
+function loadQuestClaimSample(): Promise<AudioBuffer | null> {
+  if (_questClaimBuffer) return Promise.resolve(_questClaimBuffer);
+  if (_questClaimBufferPromise) return _questClaimBufferPromise;
+  const ctx = getAudio();
+  if (!ctx) return Promise.resolve(null);
+  _questClaimBufferPromise = fetch("/sounds/quest-claim.wav")
+    .then((r) => r.arrayBuffer())
+    .then((ab) => ctx.decodeAudioData(ab))
+    .then((buf) => { _questClaimBuffer = buf; return buf; })
+    .catch(() => null);
+  return _questClaimBufferPromise;
+}
+
+function loadBonusClaimSample(): Promise<AudioBuffer | null> {
+  if (_bonusClaimBuffer) return Promise.resolve(_bonusClaimBuffer);
+  if (_bonusClaimBufferPromise) return _bonusClaimBufferPromise;
+  const ctx = getAudio();
+  if (!ctx) return Promise.resolve(null);
+  _bonusClaimBufferPromise = fetch("/sounds/bonus-claim.wav")
+    .then((r) => r.arrayBuffer())
+    .then((ab) => ctx.decodeAudioData(ab))
+    .then((buf) => { _bonusClaimBuffer = buf; return buf; })
+    .catch(() => null);
+  return _bonusClaimBufferPromise;
+}
+
 function loadTickSample(): Promise<AudioBuffer | null> {
   if (_tickBufA) return Promise.resolve(_tickBufA);
   if (_tickBufAPromise) return _tickBufAPromise;
@@ -118,9 +148,9 @@ export function preloadLanding(): Promise<AudioBuffer | null> {
   return loadCardSample();
 }
 
-/** Preloads all audio samples (pack, card, tick) */
+/** Preloads all audio samples (pack, card, tick, bonus) */
 export async function preloadTickBuffer(): Promise<void> {
-  await Promise.all([loadPackSample(), loadCardSample(), loadTickSample()]);
+  await Promise.all([loadPackSample(), loadCardSample(), loadTickSample(), loadBonusClaimSample(), loadQuestClaimSample()]);
 }
 
 // ─── Audio primitives ────────────────────────────────────────────────────────
@@ -633,3 +663,37 @@ export function reset(container: HTMLElement | null) {
 
 export function setSound(enabled: boolean) { _soundEnabled = !!enabled; }
 export function isSoundEnabled() { return _soundEnabled; }
+
+// Bingo sound played when claiming the all-5-challenges daily bonus reward
+export function playBonusClaimSound() {
+  const ctx = getAudio();
+  if (!ctx || !_soundEnabled) return;
+  if (_bonusClaimBuffer) {
+    const src = ctx.createBufferSource();
+    src.buffer = _bonusClaimBuffer;
+    const g = ctx.createGain();
+    g.gain.value = 0.35;
+    src.connect(g).connect(ctx.destination);
+    src.start(ctx.currentTime);
+    return;
+  }
+  // Preload if not ready yet and retry on next gesture
+  loadBonusClaimSample().then((buf) => { if (buf) playBonusClaimSound(); });
+}
+
+// Softened bupabo sting played when claiming an individual daily challenge reward
+export function playClaimSound() {
+  const ctx = getAudio();
+  if (!ctx || !_soundEnabled) return;
+  if (_questClaimBuffer) {
+    const now = ctx.currentTime;
+    const src = ctx.createBufferSource();
+    src.buffer = _questClaimBuffer;
+    const g = ctx.createGain();
+    g.gain.value = 0.55;
+    src.connect(g).connect(ctx.destination);
+    src.start(now);
+    return;
+  }
+  loadQuestClaimSample().then((buf) => { if (buf) playClaimSound(); });
+}

@@ -1600,6 +1600,19 @@ python main.py --refresh
 → upload images sur R2
 ```
 
+### ffmpeg WSL — alias `~/.zshrc`
+ffmpeg est installé côté Windows (WinGet). Alias dans `~/.zshrc` pour l'utiliser depuis WSL :
+```bash
+alias ffmpeg="/mnt/c/Users/lerus/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-8.1-full_build/bin/ffmpeg.exe"
+```
+⚠️ Les paths doivent être en format Windows (`C:\\...`), pas WSL (`/mnt/c/...`).
+
+Exemple — time-stretch sans pitch shift (atempo) :
+```bash
+ffmpeg -i "C:\\path\\in.wav" -filter:a "atempo=1.20" "C:\\path\\out.wav" -y
+```
+`atempo` accepte 0.5–2.0. Pour >2.0 chaîner : `atempo=2.0,atempo=1.5`.
+
 ### Alias git — push rapide (`~/.bashrc`)
 ```bash
 gitpushcsgo() {

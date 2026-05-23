@@ -32,6 +32,7 @@ import {
   STREAK_TIERS,
   type StreakState,
 } from "./lib/streak";
+import { playClaimSound, playBonusClaimSound } from "./lib/reveal";
 
 type PackType = "daily" | "ads" | "milestone";
 
@@ -106,12 +107,8 @@ function makeDailyPack(idx: number): QueuedPack {
 }
 
 export default function PackPage() {
-  const [now, setNow] = useState(() => Date.now());
-  const [streakState, setStreakState] = useState<StreakState>(() => {
-    if (typeof window === "undefined") return { streak: 0, lastLoginDate: "", milestonePacks: 0 };
-    touchStreak();
-    return getStreak();
-  });
+  const [now, setNow] = useState(0);
+  const [streakState, setStreakState] = useState<StreakState>({ streak: 0, lastLoginDate: "", milestonePacks: 0 });
   const [hoveredCube, setHoveredCube] = useState<number | null>(null);
   // Daily queue: grows with streak tier
   const [dailyQueue, setDailyQueue] = useState<QueuedPack[]>([]);
@@ -122,18 +119,13 @@ export default function PackPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [activePack, setActivePack] = useState<{ pack: QueuedPack; isAds: boolean } | null>(null);
   const [packCards, setPackCards] = useState<RevealCard[]>([]);
-  const [challenges, setChallenges] = useState<ChallengeWithState[]>(() =>
-    typeof window !== "undefined" ? getChallengesWithState() : []
-  );
+  const [challenges, setChallenges] = useState<ChallengeWithState[]>([]);
   const [claimingId, setClaimingId] = useState<string | null>(null);
-  const [rerollsUsed, setRerollsUsed] = useState(() =>
-    typeof window !== "undefined" ? getRerollsUsed() : 0
-  );
-  const [bonusClaimed, setBonusClaimed] = useState(() =>
-    typeof window !== "undefined" ? getBonusClaimed() : false
-  );
+  const [rerollsUsed, setRerollsUsed] = useState(0);
+  const [bonusClaimed, setBonusClaimed] = useState(false);
 
   useEffect(() => {
+    setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
@@ -257,6 +249,7 @@ export default function PackPage() {
 
   function handleClaimChallenge(id: string) {
     if (claimingId) return;
+    playClaimSound();
     setClaimingId(id);
     setTimeout(() => {
       claimChallenge(id);
@@ -274,6 +267,7 @@ export default function PackPage() {
 
   function handleClaimBonus() {
     if (bonusClaimed || !canClaimDailyBonus()) return;
+    playBonusClaimSound();
     claimDailyBonus();
     setBonusClaimed(true);
     setChallenges(getChallengesWithState());
