@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import "flag-icons/css/flag-icons.min.css";
 import BottomNav from "./components/BottomNav";
+import LevelUpModal from "./components/LevelUpModal";
 
 export const metadata: Metadata = {
   title: "CS Vibe",
@@ -42,6 +43,7 @@ export default function RootLayout({
       >
         <main className="pb-20">{children}</main>
         <BottomNav />
+        <LevelUpModal />
       </body>
     </html>
   );

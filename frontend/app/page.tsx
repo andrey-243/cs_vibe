@@ -102,7 +102,20 @@ function makeDailyPack(idx: number): QueuedPack {
     initialDuration: PACK_TIMER_MS,
     adsUsed: 0,
     adsMax: checkpoints.length,
-    claimed: false, // must be claimed before timer starts
+    claimed: false,
+  };
+}
+
+function makeMilestonePack(): QueuedPack {
+  const checkpoints = skipTimerCheckpoints(PACK_TIMER_MS);
+  return {
+    id: `milestone-${Date.now()}`,
+    type: "milestone",
+    endsAt: 0,
+    initialDuration: PACK_TIMER_MS,
+    adsUsed: 0,
+    adsMax: checkpoints.length,
+    claimed: false,
   };
 }
 
@@ -148,6 +161,15 @@ export default function PackPage() {
     refresh();
     window.addEventListener("csv-challenges-updated", refresh);
     return () => window.removeEventListener("csv-challenges-updated", refresh);
+  }, []);
+
+  // Grant a free pack when a level-up reward includes one
+  useEffect(() => {
+    function onPackGranted() {
+      setDailyQueue((q) => [...q, makeMilestonePack()]);
+    }
+    window.addEventListener("csv-pack-granted", onPackGranted);
+    return () => window.removeEventListener("csv-pack-granted", onPackGranted);
   }, []);
 
   function claimPack(pack: QueuedPack, isAds: boolean) {

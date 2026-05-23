@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { C, F, RarityTier, GEM_COLORS, GEM_PARTY_NAMES, GEM_PACK_NAMES } from "../lib/tokens";
-import TopBar from "../components/TopBar";
 import MiniCard from "../components/MiniCard";
-import XPBar from "../components/XPBar";
 import Gem from "../components/Gem";
-import { getTotalXP, getLevelInfo } from "../lib/xp";
+import { getTotalXP, getLevelInfo, LEVEL_SVG } from "../lib/xp";
 import { getGems, addGems, removeGems } from "../lib/gems";
 
 const GEM_TIERS = ["TOP5", "TOP15", "TOP25", "TOP50", "TOP75", "TOP100"] as const;
@@ -38,93 +36,41 @@ export default function ProfilPage() {
     };
   }, []);
 
-  const { current, next, progressPct, totalXP } = levelInfo;
-  const xp = totalXP - current.xpStart;
-  const xpNext = next ? next.xpStart - current.xpStart : 0;
+  const { current } = levelInfo;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", fontFamily: F.body, color: C.ink }}>
-      <TopBar />
 
-      {/* Hero avatar */}
-      <div style={{ position: "relative", padding: "4px 14px 0", textAlign: "center" }}>
-        <div
-          style={{
-            position: "absolute",
-            top: 60,
-            left: "50%",
-            width: 200,
-            height: 200,
-            transform: "translate(-50%, -50%)",
-            background: `radial-gradient(circle, ${C.gold}88 0%, transparent 65%)`,
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          style={{
-            position: "relative",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 80,
-            height: 80,
-            borderRadius: "50%",
-            background: `linear-gradient(180deg, ${C.gold}, ${C.goldDk})`,
-            border: "3px solid rgba(255,255,255,0.3)",
-            boxShadow: `0 6px 18px rgba(0,0,0,0.5), 0 0 20px ${C.gold}66, inset 0 2px 0 rgba(255,255,255,0.4)`,
-            fontFamily: F.body,
-            fontSize: 36,
-            fontWeight: 800,
-            color: "#1a1208",
-          }}
-        >
-          ?
-        </div>
-        <div style={{ position: "relative", marginTop: 8 }}>
-          <div style={{ fontFamily: F.body, fontSize: 20, fontWeight: 800, letterSpacing: "-0.01em", color: C.muted }}>
-            Non connecté
+      {/* Hero panel */}
+      <div style={{ padding: "14px 14px 0" }}>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          padding: "14px 16px",
+          borderRadius: 14,
+          background: "rgba(255,255,255,0.045)",
+          border: `1px solid ${C.border}`,
+        }}>
+          {/* Level icon */}
+          <div style={{ flexShrink: 0 }}>
+            {LEVEL_SVG[current.level] && (
+              <img
+                src={`/ranks/levels/${LEVEL_SVG[current.level]}.svg`}
+                width={56}
+                height={56}
+                alt={current.name}
+                style={{ objectFit: "contain", display: "block" }}
+              />
+            )}
           </div>
-          <div style={{ fontFamily: F.mono, fontSize: 9.5, color: C.faint, letterSpacing: "0.14em", marginTop: 2 }}>
-            CONNECTE-TOI POUR SAUVEGARDER
-          </div>
-        </div>
-      </div>
-
-      {/* Level + XP */}
-      <div style={{ padding: "12px 14px 0" }}>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 12px",
-            borderRadius: 12,
-            background: "rgba(255,255,255,0.05)",
-            border: `1px solid ${C.border}`,
-          }}
-        >
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              background: `linear-gradient(180deg, ${C.gold}, ${C.goldDk})`,
-              color: "#1a1208",
-              padding: "6px 12px",
-              borderRadius: 999,
-              flexShrink: 0,
-            }}
-          >
-            <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 800 }}>{current.level}</span>
-          </div>
-          <div style={{ flex: 1 }}>
-            <XPBar pct={progressPct} color="gold" height={8} />
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}>
-              <div style={{ fontFamily: F.mono, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: C.muted }}>
-                {xp} / {xpNext > 0 ? xpNext : "MAX"} XP
-              </div>
-              <div style={{ fontFamily: F.mono, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: C.gold }}>
-                {next ? `→ ${next.name}` : "MAX RANK"}
-              </div>
+          {/* Identity */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <div style={{ fontFamily: F.body, fontSize: 17, fontWeight: 800, color: C.muted, letterSpacing: "-0.01em" }}>
+              Non connecté
+            </div>
+            <div style={{ fontFamily: F.mono, fontSize: 8.5, color: C.faint, letterSpacing: "0.14em" }}>
+              CONNECTE-TOI POUR SAUVEGARDER
             </div>
           </div>
         </div>
@@ -202,10 +148,10 @@ export default function ProfilPage() {
                 <Gem tier={tier} size={14} />
                 <div style={{ display: "flex", flexDirection: "column", width: 112 }}>
                   <span style={{ fontFamily: F.body, fontSize: 11, fontWeight: 800, letterSpacing: "0.04em", color: C.ink }}>
-                    {GEM_PACK_NAMES[tier] ?? tier}
+                    {GEM_PARTY_NAMES[tier] ?? tier}
                   </span>
                   <span style={{ fontFamily: F.mono, fontSize: 8, letterSpacing: "0.08em", color: C.faint, marginTop: 1 }}>
-                    {GEM_PARTY_NAMES[tier] ?? tier}
+                    {GEM_PACK_NAMES[tier] ?? tier}
                   </span>
                 </div>
                 {ready ? (

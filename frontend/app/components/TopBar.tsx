@@ -1,20 +1,49 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { C, F, GEM_COLORS, GEM_PACK_NAMES } from "../lib/tokens";
+import { C, F, GEM_COLORS, GEM_PARTY_NAMES } from "../lib/tokens";
 import Gem from "./Gem";
-import { getTotalXP, getLevelInfo } from "../lib/xp";
+import { getTotalXP, getLevelInfo, LEVEL_SVG, LEVEL_REWARDS, type RewardPackTier } from "../lib/xp";
 import { getGems } from "../lib/gems";
 
 const GEM_TIERS = Object.keys(GEM_COLORS) as string[];
 
-function nextLevelReward(nextLevel: number): string {
-  if (nextLevel === 7)  return "Pack TOP100";
-  if (nextLevel === 18) return "Pack TOP25";
-  if (nextLevel === 28) return "Pack TOP10";
-  if (nextLevel === 41) return "Pack ICON";
-  if (nextLevel >= 19)  return "+Pack · Gems";
-  return "+1 Pack";
+const PACK_PARTY: Record<string, string> = {
+  TOP5:   "CHOSEN FEW",
+  TOP15:  "PRETENDERS",
+  TOP25:  "GATEKEEPERS",
+  TOP50:  "GRINDERS",
+  TOP75:  "PICK'EM KILLERS",
+  TOP100: "NO LAN NO FAME",
+  ICON:   "Pack Icon",
+};
+
+function nextRewardLabel(nextLevel: number): string {
+  const r = LEVEL_REWARDS[nextLevel];
+  if (!r) return "+1 Pack";
+  const packs = [r.pack, r.extraPack].filter(Boolean) as RewardPackTier[];
+  if (!packs.length) return "";
+  const themed = packs.find((p) => p !== "free");
+  const freeCount = packs.filter((p) => p === "free").length;
+  if (themed) {
+    const name = PACK_PARTY[themed] ?? themed;
+    return freeCount > 0 ? `${name} +${freeCount}` : name;
+  }
+  return `+${packs.length} Pack`;
+}
+
+function LevelIcon({ level, size }: { level: number; size: number }) {
+  const file = LEVEL_SVG[level];
+  if (!file) return null;
+  return (
+    <img
+      src={`/ranks/levels/${file}.svg`}
+      width={size}
+      height={size}
+      alt={`lvl${level}`}
+      style={{ display: "block", objectFit: "contain" }}
+    />
+  );
 }
 
 export default function TopBar({ major = false }: { major?: boolean }) {
@@ -26,7 +55,6 @@ export default function TopBar({ major = false }: { major?: boolean }) {
   useEffect(() => {
     function syncXP()  { setLevelInfo(getLevelInfo(getTotalXP())); }
     function syncGems() { setGemCounts(getGems()); }
-    // Hydrate from localStorage after mount
     syncXP();
     syncGems();
     window.addEventListener("csv-xp-updated", syncXP);
@@ -42,40 +70,23 @@ export default function TopBar({ major = false }: { major?: boolean }) {
   const xpForLevel = next ? next.xpStart - current.xpStart : 0;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px" }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px" }}>
 
-      {/* Level pill — hover shows gems breakdown */}
+      {/* Current level icon — hover shows gems breakdown */}
       <div
         style={{ position: "relative", flexShrink: 0 }}
         onMouseEnter={() => setShowGems(true)}
         onMouseLeave={() => setShowGems(false)}
       >
-        <div
-          style={{
-            display: "inline-flex",
-            flexDirection: "column",
-            alignItems: "center",
-            fontFamily: F.body,
-            fontWeight: 700,
-            background: "rgba(255,210,63,0.15)",
-            color: C.gold,
-            padding: "3px 8px",
-            borderRadius: 999,
-            border: `1px solid ${C.border}`,
-            letterSpacing: "0.04em",
-            lineHeight: 1,
-            cursor: "default",
-          }}
-        >
-          <span style={{ fontSize: 8, opacity: 0.7 }}>LVL {current.level}</span>
-          <span style={{ fontSize: 8, marginTop: 1 }}>{current.name}</span>
+        <div style={{ cursor: "default" }}>
+          <LevelIcon level={current.level} size={40} />
         </div>
 
         {showGems && (
           <div
             style={{
               position: "fixed",
-              top: 44,
+              top: 52,
               left: 14,
               background: C.bg2,
               border: `1px solid ${C.borderHi}`,
@@ -83,14 +94,14 @@ export default function TopBar({ major = false }: { major?: boolean }) {
               padding: "6px 0",
               zIndex: 200,
               boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
-              minWidth: 148,
+              minWidth: 160,
             }}
           >
             {GEM_TIERS.map((tier) => (
               <div key={tier} style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px" }}>
                 <Gem tier={tier} size={10} />
                 <span style={{ fontFamily: F.mono, fontSize: 9, letterSpacing: "0.06em", color: C.muted, flex: 1 }}>
-                  {GEM_PACK_NAMES[tier] ?? tier}
+                  {GEM_PARTY_NAMES[tier] ?? tier}
                 </span>
                 <span style={{ fontFamily: F.mono, fontSize: 10, fontWeight: 800, color: C.ink }}>
                   {gemCounts[tier] ?? 0}
@@ -101,16 +112,15 @@ export default function TopBar({ major = false }: { major?: boolean }) {
         )}
       </div>
 
-      {/* XP bar — tall, next level overlaid inside */}
+      {/* XP bar */}
       <div
         style={{ flex: 1, position: "relative" }}
         onMouseEnter={() => setShowXP(true)}
         onMouseLeave={() => setShowXP(false)}
       >
-        {/* Bar track */}
         <div style={{
-          height: 16,
-          borderRadius: 8,
+          height: 6,
+          borderRadius: 99,
           overflow: "hidden",
           background: "rgba(0,0,0,0.4)",
           border: `1px solid ${C.border}`,
@@ -132,37 +142,9 @@ export default function TopBar({ major = false }: { major?: boolean }) {
             }} />
           </div>
 
-          {/* Next level text — overlaid right */}
-          {next && (
-            <div style={{
-              position: "absolute", inset: 0,
-              display: "flex", alignItems: "center",
-              justifyContent: "flex-end",
-              paddingRight: 9, gap: 5,
-            }}>
-              <span style={{
-                fontFamily: F.mono, fontSize: 8, fontWeight: 800,
-                color: "rgba(255,255,255,0.82)",
-                letterSpacing: "0.03em",
-                textShadow: "0 1px 4px rgba(0,0,0,0.9)",
-                whiteSpace: "nowrap",
-              }}>
-                → {next.name}
-              </span>
-              <span style={{
-                fontFamily: F.mono, fontSize: 7.5,
-                color: C.teal,
-                letterSpacing: "0.04em",
-                textShadow: "0 1px 4px rgba(0,0,0,0.9)",
-                whiteSpace: "nowrap",
-              }}>
-                {nextLevelReward(next.level)}
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Hover tooltip — XP detail */}
+        {/* Hover tooltip */}
         {showXP && (
           <div style={{
             position: "absolute",
@@ -173,22 +155,37 @@ export default function TopBar({ major = false }: { major?: boolean }) {
             background: C.bg2,
             border: `1px solid ${C.borderHi}`,
             borderRadius: 6,
-            padding: "4px 10px",
+            padding: "5px 10px",
             zIndex: 200,
             boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
             display: "flex",
-            alignItems: "baseline",
-            gap: 4,
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 3,
           }}>
-            <span style={{ fontFamily: F.mono, fontSize: 9, fontWeight: 800, color: C.gold }}>
-              {xpInLevel.toLocaleString()}
-            </span>
-            <span style={{ fontFamily: F.mono, fontSize: 9, color: C.faint }}>
-              / {xpForLevel > 0 ? xpForLevel.toLocaleString() : "—"} XP
-            </span>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+              <span style={{ fontFamily: F.mono, fontSize: 9, fontWeight: 800, color: C.gold }}>
+                {xpInLevel.toLocaleString()}
+              </span>
+              <span style={{ fontFamily: F.mono, fontSize: 9, color: C.faint }}>
+                / {xpForLevel > 0 ? xpForLevel.toLocaleString() : "—"} XP
+              </span>
+            </div>
+            {next && (
+              <span style={{ fontFamily: F.mono, fontSize: 8, color: C.teal, letterSpacing: "0.06em" }}>
+                {nextRewardLabel(next.level)}
+              </span>
+            )}
           </div>
         )}
       </div>
+
+      {/* Next level icon */}
+      {next && (
+        <div style={{ flexShrink: 0, opacity: 0.5 }}>
+          <LevelIcon level={next.level} size={40} />
+        </div>
+      )}
     </div>
   );
 }

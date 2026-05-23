@@ -968,3 +968,52 @@ main {
   animation: challenge-bonus-pulse 1.6s ease-in-out infinite;
   cursor: pointer;
 }
+
+/* ── Level-up modal ──────────────────────────────────────────────────────── */
+@keyframes csv-levelup-overlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes csv-levelup-card-in {
+  0%   { opacity: 0; transform: scale(0.82) translateY(24px); }
+  65%  { transform: scale(1.03) translateY(-4px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes csv-levelup-glow-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 1; }
+}
+
+@keyframes csv-levelup-badge-pop {
+  0%   { transform: scale(0.5); opacity: 0; }
+  70%  { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes csv-levelup-shine {
+  0%   { transform: translateX(-160%) skewX(-18deg); opacity: 0; }
+  20%  { opacity: 0.7; }
+  100% { transform: translateX(260%) skewX(-18deg); opacity: 0; }
+}
+
+.csv-levelup-overlay {
+  animation: csv-levelup-overlay 220ms ease-out forwards;
+}
+
+.csv-levelup-card {
+  animation: csv-levelup-card-in 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.csv-levelup-glow {
+  animation: csv-levelup-glow-pulse 2s ease-in-out infinite;
+}
+
+.csv-levelup-badge {
+  animation: csv-levelup-badge-pop 500ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
+}
+
+.csv-levelup-shine {
+  animation: csv-levelup-shine 900ms ease-out 600ms forwards;
+}

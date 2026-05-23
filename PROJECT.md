@@ -866,20 +866,28 @@ Constantes dans `tokens.ts` :
 **TopBar — layout**
 
 ```
-[LVL pill (hover→gems)]  [████████░░░░ → Silver IV · +1 Pack]
-                          ↑ barre 16px, next level overlayé à droite
+[icon lvl actuel 40px]  [══════════ barre fine 6px ══════════]  [icon next lvl 40px, opacity 50%]
+                          hover → tooltip XP exact + pack name
 ```
 
-- **Level pill** (gauche, `flexShrink: 0`) : `LVL N` + nom rank, fond gold translucide. Hover → dropdown gems (`GEM_PACK_NAMES[tier]` + count).
-- **XP bar** (droite, `flex: 1`) : hauteur **16px**, barre avec fill gradient gold/crimson. Next level text **overlayé à l'intérieur** à droite — `→ Silver IV` (8px, blanc 82%, textShadow) + récompense (7.5px, teal). Hover → tooltip centré `max-content` avec `X / Y XP` en baseline-align.
-  - Récompenses par palier (`nextLevelReward(nextLevel)`) :
-    - Lvl 7 → `Pack TOP100` · Lvl 18 → `Pack TOP25` · Lvl 28 → `Pack TOP10` · Lvl 41 → `Pack ICON`
-    - Faceit + ESEA → `+Pack · Gems` · Silver/Gold/MG/LE → `+1 Pack`
-- Pas de fond ni bordure sur le wrapper du TopBar — transparent comme le reste de la page.
+- **Icône niveau actuel** (gauche, 40px) : SVG depuis `LEVEL_SVG[level]` → `/ranks/levels/{file}.svg`. Hover → dropdown gems avec `GEM_PARTY_NAMES[tier]` (CHOSEN FEW, etc.) + count.
+- **XP bar** (centre, `flex: 1`) : hauteur **6px**, barre fine, fill gradient gold/crimson. Hover → tooltip `X / Y XP` + party name de la récompense du prochain level en teal (ex: `NO LAN NO FAME +1`).
+- **Icône niveau suivant** (droite, 40px, opacity 50%) : SVG du prochain level. Absent au level max.
+- Pas de fond ni bordure sur le wrapper — transparent comme le reste de la page.
+
+**Gems affichage — profil + hover TopBar**
+- Ordre d'affichage : `GEM_PARTY_NAMES[tier]` (CHOSEN FEW) en titre principal, `GEM_PACK_NAMES[tier]` (S-Tier) en sous-titre.
+- Les labels compacts inline (boutons uncraft, filtres dropdown) gardent `GEM_PACK_NAMES` pour la lisibilité.
+
+**Tab Profil — hero section (`app/profil/page.tsx`)**
+- Pas de TopBar — barre XP déjà visible sur toutes les autres pages, double info inutile
+- Hero panel horizontal (padding 14px, borderRadius 14, fond `rgba(255,255,255,0.045)`, bordure subtile) :
+  - Gauche : icône SVG du niveau actuel 56px via `LEVEL_SVG[current.level]`
+  - Droite : "Non connecté" (17px fw=800) + "CONNECTE-TOI POUR SAUVEGARDER" (8.5px mono faint)
 
 **UI gems — tab Profil (`app/profil/page.tsx`)**
 - Seuil craft : `CRAFT_THRESHOLD = 250` gems par tier
-- Chaque row : `GEM_PACK_NAMES[tier]` (`S-Tier`) en gras 11px + `GEM_PARTY_NAMES[tier]` (`CHOSEN FEW`) en mono 8px faint en dessous
+- Chaque row : `GEM_PARTY_NAMES[tier]` (`CHOSEN FEW`) en gras 11px + `GEM_PACK_NAMES[tier]` (`S-Tier`) en mono 8px faint en dessous
 - Barre de progression : `amount / 250 × 100%` — pleine = pack craftable
 - Quand `amount >= 250` : la barre est remplacée par un badge **PACK DISPO** centré, couleur du tier, animation `gem-pulse` (glow respirant 1.8s, style "NEW!" des cartes)
 - Système Convertir (bouton toggle, panel inline) :
@@ -927,7 +935,7 @@ Constantes dans `tokens.ts` :
 
 ## Système de Level (XP)
 
-### Progression — 41 niveaux calqués sur CS
+### Progression — 33 niveaux calqués sur CS
 
 **Phase 1 — CS2 Ranks (18 niveaux)**
 ```
@@ -947,6 +955,67 @@ Faceit Level 1 → 2 → 3 → ... → 10
 ```
 D- → D → D+ → C- → C → C+ → B- → B → B+ → A- → A → A+ → S
 ```
+
+### Icônes de rank — assets disponibles
+
+Source : [ItzArty/csgo-rank-icons](https://github.com/ItzArty/csgo-rank-icons) — icônes extraites des binaires CS:GO.
+
+**Structure fichiers :**
+```
+rank_icons_source/          ← lib originale complète (hors frontend, référence only)
+  matchmaking/ · dangerzone/ · faceit/ · wingman/ · ranks/ · logo/ · maps-icons/
+
+frontend/public/ranks/levels/   ← nos 34 icônes renommées, seul dossier utilisé en prod
+```
+
+**Convention de nommage** : `lvl{N}_{cat}{svgNum}.svg`
+- `cat` = `mm` (matchmaking) ou `dz` (dangerzone)
+- `svgNum` = numéro du fichier source dans le repo original
+- Exemple : `lvl7_dz1.svg` = niveau 7, dangerzone/1.svg source
+
+**Affichage prévu :** icône seule, pas de texte — taille calée sur le rendu visuel. TopBar (level pill) + tab Profil. Les noms display (Silver I, Gold Nova...) restent en interne pour référence mais ne sont plus affichés.
+
+**Mapping complet niveau → fichier → ancien nom de rank :**
+
+| Niveau | Fichier | Ancien nom |
+|--------|---------|------------|
+| 0 | `lvl0_mm0.svg` | *(unranked)* |
+| 1 | `lvl1_mm1.svg` | Silver I |
+| 2 | `lvl2_mm2.svg` | Silver II |
+| 3 | `lvl3_mm3.svg` | Silver III |
+| 4 | `lvl4_mm4.svg` | Silver IV |
+| 5 | `lvl5_mm5.svg` | Silver Elite |
+| 6 | `lvl6_mm6.svg` | Silver Elite Master |
+| 7 | `lvl7_dz1.svg` | Gold Nova I |
+| 8 | `lvl8_dz2.svg` | Gold Nova II |
+| 9 | `lvl9_dz3.svg` | Gold Nova III |
+| 10 | `lvl10_dz4.svg` | Gold Nova Master |
+| 11 | `lvl11_dz5.svg` | Master Guardian I |
+| 12 | `lvl12_dz6.svg` | Master Guardian II |
+| 13 | `lvl13_mm7.svg` | Master Guardian Elite |
+| 14 | `lvl14_mm8.svg` | Distinguished MG |
+| 15 | `lvl15_mm9.svg` | Legendary Eagle |
+| 16 | `lvl16_mm10.svg` | Legendary Eagle Master |
+| 17 | `lvl17_mm11.svg` | Supreme MFC |
+| 18 | `lvl18_mm12.svg` | Global Elite |
+| 19 | `lvl19_mm13.svg` | Faceit 1 |
+| 20 | `lvl20_dz7.svg` | Faceit 2 |
+| 21 | `lvl21_dz8.svg` | Faceit 3 |
+| 22 | `lvl22_dz9.svg` | Faceit 4 |
+| 23 | `lvl23_dz10.svg` | Faceit 5 |
+| 24 | `lvl24_dz11.svg` | Faceit 6 |
+| 25 | `lvl25_dz12.svg` | Faceit 7 |
+| 26 | `lvl26_mm14.svg` | Faceit 8 |
+| 27 | `lvl27_mm15.svg` | Faceit 9 |
+| 28 | `lvl28_mm16.svg` | Faceit 10 |
+| 29 | `lvl29_mm17.svg` | ESEA D- |
+| 30 | `lvl30_mm18.svg` | ESEA D |
+| 31 | `lvl31_dz13.svg` | ESEA D+ |
+| 32 | `lvl32_dz14.svg` | ESEA C- |
+| 33 | `lvl33_dz15.svg` | ESEA C |
+| 34–41 | ❌ pas d'icône | ESEA C+ → ESEA S |
+
+> ESEA C+ → S (8 derniers niveaux) : pas d'icônes dans ce repo. À traiter séparément (assets ESEA officiels ou style custom).
 
 ### XP par source
 
@@ -988,7 +1057,7 @@ Casual (~3/5)                 →  ~40 XP/jour
 Optimal (~4.5/5)              →  ~70 XP/jour
 ```
 
-### Courbe XP — seuils implémentés (41 niveaux)
+### Courbe XP — seuils implémentés (33 niveaux)
 
 Calibration : Silver III atteignable fin semaine 1 casual (~623 XP). Tous les seuils ×4 vs V1 (recalibrés avec les daily challenges).
 
@@ -1081,35 +1150,52 @@ ESEA S (20k XP)        ~32 sem    ~14 sem
 28 Faceit 10 → 58 000 XP   (~93 sem casual / ~39 sem optimal)
 ```
 
-**Phase 3 — ESEA (niveaux 29–41) :**
+**Phase 3 — ESEA (niveaux 29–33) :**
 ```
 29 ESEA D-  → 60 400 XP
 30 ESEA D   → 63 000 XP
 31 ESEA D+  → 65 800 XP
 32 ESEA C-  → 68 000 XP
-33 ESEA C   → 70 000 XP
-34 ESEA C+  → 71 800 XP
-35 ESEA B-  → 73 400 XP
-36 ESEA B   → 74 800 XP
-37 ESEA B+  → 76 000 XP
-38 ESEA A-  → 77 000 XP
-39 ESEA A   → 78 000 XP
-40 ESEA A+  → 79 000 XP
-41 ESEA S   → 80 000 XP   (~128 sem casual / ~54 sem optimal)
+33 ESEA C   → 70 000 XP   (niveau max — ~111 sem casual / ~47 sem optimal)
 ```
 
 ### Récompenses par palier
-*(à équilibrer — grandes lignes)*
 
-| Palier | Récompense |
-|---|---|
-| Chaque rank Silver | +1 free pack |
-| Gold Nova I | Pack thématique TOP100 |
-| Global Elite | Pack thématique TOP25 |
-| Chaque Faceit level | +1 free pack + gems bonus |
-| Faceit 10 | Pack thématique TOP10 |
-| Chaque ESEA rank | +1 free pack + gems bonus |
-| ESEA S | Pack Icon garanti |
+| Lvl | Internal | Packs |
+|-----|----------|-------|
+| 1 | lvl1_mm1 | TOP100 |
+| 2 | lvl2_mm2 | ×1 |
+| 3 | lvl3_mm3 | ×1 |
+| 4 | lvl4_mm4 | ×1 |
+| 5 | lvl5_mm5 | ×1 |
+| 6 | lvl6_mm6 | ×1 + TOP75 |
+| 7 | lvl7_dz1 | ×1 |
+| 8 | lvl8_dz2 | ×1 |
+| 9 | lvl9_dz3 | ×1 |
+| 10 | lvl10_dz4 | ×1 |
+| 11 | lvl11_dz5 | ×1 |
+| 12 | lvl12_dz6 | ×1 + TOP75 |
+| 13 | lvl13_mm7 | ×2 |
+| 14 | lvl14_mm8 | ×2 |
+| 15 | lvl15_mm9 | ×2 |
+| 16 | lvl16_mm10 | ×2 |
+| 17 | lvl17_mm11 | ×2 |
+| 18 | lvl18_mm12 | ×2 |
+| 19 | lvl19_mm13 | ×2 + TOP25 |
+| 20 | lvl20_dz7 | ×2 |
+| 21 | lvl21_dz8 | ×2 |
+| 22 | lvl22_dz9 | ×2 |
+| 23 | lvl23_dz10 | ×3 |
+| 24 | lvl24_dz11 | ×3 |
+| 25 | lvl25_dz12 | ×3 + TOP15 |
+| 26 | lvl26_mm14 | ×3 |
+| 27 | lvl27_mm15 | ×3 |
+| 28 | lvl28_mm16 | ×3 |
+| 29 | lvl29_mm17 | ×3 |
+| 30 | lvl30_mm18 | ×3 + TOP15 |
+| 31 | lvl31_dz13 | ×1 + TOP5 |
+| 32 | lvl32_dz14 | ×2 + TOP5 |
+| 33 | lvl33_dz15 | ×3 + TOP5 |
 
 ### Prestige
 - À ESEA S : option de reset au niveau 1 contre un badge **Prestige X**
@@ -1652,7 +1738,7 @@ Stage tout (`git add -A`), commit, push en une commande depuis n'importe quel te
 - [x] Pack queue + timers — deux queues (daily + bonus), Claim → timer 1h → Accélérer pub(s) → Ouvrir, convention ▶ = pub
 - [x] Pack opening animation — pack shake + tear + burst → roue × 5 + flip reveal → récap + persist localStorage
 - [x] Daily challenges — 5 quests/jour, pool 11 variantes, seed daily, localStorage, hooks pack/rarity/nation, reset minuit
-- [x] XP system frontend — `lib/xp.ts` + `lib/challenges.ts`, courbe 41 niveaux recalibrée ×4 (Silver III = fin sem 1 casual)
+- [x] XP system frontend — `lib/xp.ts` + `lib/challenges.ts`, courbe 33 niveaux (Silver III = fin sem 1 casual, cap ESEA C = 70 000 XP)
 - [x] Système de streak — widget full-width (jours, ×XP mult, barre 7 cases, hint palier suivant), logique localStorage complète
 - [x] Bulk uncraft collection — Décraft doublons (keep 1) en 1 clic + mode sélection multi-cartes, confirmation modal avec preview gems par tier
 - [ ] Level-up detection dans `addXP()` — comparer ancien/nouveau niveau, dispatcher `csv-level-up` CustomEvent

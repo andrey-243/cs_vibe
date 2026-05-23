@@ -71,19 +71,88 @@ export const LEVELS: LevelDef[] = [
   { level: 31, name: "ESEA D+",                phase: "esea",   xpStart: 65800  },
   { level: 32, name: "ESEA C-",                phase: "esea",   xpStart: 68000  },
   { level: 33, name: "ESEA C",                 phase: "esea",   xpStart: 70000  },
-  { level: 34, name: "ESEA C+",                phase: "esea",   xpStart: 71800  },
-  { level: 35, name: "ESEA B-",                phase: "esea",   xpStart: 73400  },
-  { level: 36, name: "ESEA B",                 phase: "esea",   xpStart: 74800  },
-  { level: 37, name: "ESEA B+",                phase: "esea",   xpStart: 76000  },
-  { level: 38, name: "ESEA A-",                phase: "esea",   xpStart: 77000  },
-  { level: 39, name: "ESEA A",                 phase: "esea",   xpStart: 78000  },
-  { level: 40, name: "ESEA A+",                phase: "esea",   xpStart: 79000  },
-  { level: 41, name: "ESEA S",                 phase: "esea",   xpStart: 80000  },
 ];
+
+export const LEVEL_SVG: Record<number, string> = {
+  0:  "lvl0_mm0",  1:  "lvl1_mm1",  2:  "lvl2_mm2",  3:  "lvl3_mm3",
+  4:  "lvl4_mm4",  5:  "lvl5_mm5",  6:  "lvl6_mm6",  7:  "lvl7_dz1",
+  8:  "lvl8_dz2",  9:  "lvl9_dz3",  10: "lvl10_dz4", 11: "lvl11_dz5",
+  12: "lvl12_dz6", 13: "lvl13_mm7", 14: "lvl14_mm8", 15: "lvl15_mm9",
+  16: "lvl16_mm10",17: "lvl17_mm11",18: "lvl18_mm12",19: "lvl19_mm13",
+  20: "lvl20_dz7", 21: "lvl21_dz8", 22: "lvl22_dz9", 23: "lvl23_dz10",
+  24: "lvl24_dz11",25: "lvl25_dz12",26: "lvl26_mm14",27: "lvl27_mm15",
+  28: "lvl28_mm16",29: "lvl29_mm17",30: "lvl30_mm18",31: "lvl31_dz13",
+  32: "lvl32_dz14",33: "lvl33_dz15",
+};
 
 import { getStreakXPMultiplier } from "./streak";
 
 const LS_KEY = "csv-xp-total";
+const LS_PENDING_KEY = "csv-pending-levelups";
+
+// ─── Reward types ────────────────────────────────────────────────────────────
+
+export type RewardPackTier = "free" | "TOP100" | "TOP75" | "TOP50" | "TOP25" | "TOP15" | "TOP5" | "ICON";
+
+export type LevelReward = {
+  pack?: RewardPackTier;
+  extraPack?: RewardPackTier;
+  gems?: { tier: string; amount: number };
+};
+
+export type PendingLevelUp = {
+  level: number;
+  levelName: string;
+  reward: LevelReward;
+};
+
+
+export const LEVEL_REWARDS: Record<number, LevelReward> = {
+  // CS2
+  1:  { pack: "TOP100" },
+  2:  { pack: "free" }, 3:  { pack: "free" }, 4:  { pack: "free" },
+  5:  { pack: "free" },
+  6:  { pack: "free", extraPack: "TOP75" },        // Silver Elite Master
+  7:  { pack: "free" }, 8:  { pack: "free" }, 9:  { pack: "free" },
+  10: { pack: "free" }, 11: { pack: "free" },
+  12: { pack: "free", extraPack: "TOP75" },        // Master Guardian II
+  13: { pack: "free" }, 14: { pack: "free" }, 15: { pack: "free" },
+  16: { pack: "free" }, 17: { pack: "free" }, 18: { pack: "free" },
+  // Faceit
+  19: { pack: "free", extraPack: "TOP25" },        // Faceit 1
+  20: { pack: "free" }, 21: { pack: "free" }, 22: { pack: "free" },
+  23: { pack: "free" }, 24: { pack: "free" },
+  25: { pack: "free", extraPack: "TOP15" },        // Faceit 7
+  26: { pack: "free" }, 27: { pack: "free" }, 28: { pack: "free" },
+  // ESEA
+  29: { pack: "free" }, 30: { pack: "free", extraPack: "TOP15" },
+  31: { pack: "TOP5" },
+  32: { pack: "TOP5" },
+  33: { pack: "TOP5" },
+};
+
+// ─── Pending queue ────────────────────────────────────────────────────────────
+
+export function getPendingLevelUps(): PendingLevelUp[] {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem(LS_PENDING_KEY) ?? "[]"); }
+  catch { return []; }
+}
+
+export function shiftPendingLevelUp(): PendingLevelUp | null {
+  const queue = getPendingLevelUps();
+  if (!queue.length) return null;
+  const [first, ...rest] = queue;
+  localStorage.setItem(LS_PENDING_KEY, JSON.stringify(rest));
+  return first;
+}
+
+function pushPendingLevelUp(lu: PendingLevelUp) {
+  const queue = getPendingLevelUps();
+  localStorage.setItem(LS_PENDING_KEY, JSON.stringify([...queue, lu]));
+}
+
+// ─── Core XP functions ───────────────────────────────────────────────────────
 
 export function getTotalXP(): number {
   if (typeof window === "undefined") return 0;
@@ -93,9 +162,22 @@ export function getTotalXP(): number {
 export function addXP(amount: number): void {
   if (typeof window === "undefined") return;
   const mult = getStreakXPMultiplier();
-  const current = getTotalXP();
-  localStorage.setItem(LS_KEY, String(current + Math.round(amount * mult)));
+  const oldXP = getTotalXP();
+  const newXP = oldXP + Math.round(amount * mult);
+  const oldLevel = getLevelInfo(oldXP).current.level;
+  localStorage.setItem(LS_KEY, String(newXP));
+  const newLevel = getLevelInfo(newXP).current.level;
+
   window.dispatchEvent(new Event("csv-xp-updated"));
+
+  if (newLevel > oldLevel) {
+    for (let lvl = oldLevel + 1; lvl <= newLevel; lvl++) {
+      const def = LEVELS.find((l) => l.level === lvl);
+      if (!def) continue;
+      pushPendingLevelUp({ level: lvl, levelName: def.name, reward: LEVEL_REWARDS[lvl] ?? {} });
+    }
+    window.dispatchEvent(new Event("csv-level-up"));
+  }
 }
 
 export type LevelInfo = {
