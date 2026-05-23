@@ -4,8 +4,28 @@ import { useState, useEffect } from "react";
 import { C, F, RarityTier, GEM_COLORS, GEM_PARTY_NAMES, GEM_PACK_NAMES } from "../lib/tokens";
 import MiniCard from "../components/MiniCard";
 import Gem from "../components/Gem";
-import { getTotalXP, getLevelInfo, LEVEL_SVG } from "../lib/xp";
+import { getTotalXP, getLevelInfo, LEVEL_SVG, LEVEL_REWARDS, type RewardPackTier } from "../lib/xp";
 import { getGems, addGems, removeGems } from "../lib/gems";
+import { skipTimerCheckpoints } from "../lib/streak";
+
+const PACK_PARTY: Record<string, string> = {
+  TOP5: "CHOSEN FEW", TOP15: "PRETENDERS", TOP25: "GATEKEEPERS",
+  TOP50: "GRINDERS", TOP75: "PICK'EM KILLERS", TOP100: "NO LAN NO FAME",
+};
+
+function nextRewardLabel(nextLevel: number): string {
+  const r = LEVEL_REWARDS[nextLevel];
+  if (!r) return "+1 Pack";
+  const packs = [r.pack, r.extraPack].filter(Boolean) as RewardPackTier[];
+  if (!packs.length) return "";
+  const themed = packs.find((p) => p !== "free");
+  const freeCount = packs.filter((p) => p === "free").length;
+  if (themed) {
+    const name = PACK_PARTY[themed] ?? themed;
+    return freeCount > 0 ? `${name} +${freeCount}` : name;
+  }
+  return `+${packs.length} Pack`;
+}
 
 const GEM_TIERS = ["TOP5", "TOP15", "TOP25", "TOP50", "TOP75", "TOP100"] as const;
 const CRAFT_THRESHOLD = 250;
@@ -20,12 +40,48 @@ const CONVERSIONS: { from: string; cost: number; to: string; gain: number }[] = 
 
 const SHOWCASE_SLOTS: (RarityTier | null)[] = [null, null, null, null, null];
 
+// Opening timer per gem tier (PROJECT.md: "Pack gem crafté")
+const CRAFT_TIMER_MS: Record<string, number> = {
+  TOP100: 1  * 3_600_000,
+  TOP75:  2  * 3_600_000,
+  TOP50:  4  * 3_600_000,
+  TOP25:  6  * 3_600_000,
+  TOP15:  8  * 3_600_000,
+  TOP5:   12 * 3_600_000,
+};
+
+// Writes a crafted pack directly to the daily queue localStorage key (page.tsx may not be mounted)
+function pushCraftedPack(rewardTier: string) {
+  const duration = CRAFT_TIMER_MS[rewardTier] ?? 3_600_000;
+  const checkpoints = skipTimerCheckpoints(duration);
+  let queue: unknown[] = [];
+  try { queue = JSON.parse(localStorage.getItem("csv-daily-queue") ?? "[]"); } catch { /* */ }
+  queue.push({
+    id: `milestone-${Date.now()}-craft`,
+    type: "milestone",
+    rewardTier,
+    endsAt: 0,
+    initialDuration: duration,
+    adsUsed: 0,
+    adsMax: checkpoints.length,
+    claimed: false,
+  });
+  localStorage.setItem("csv-daily-queue", JSON.stringify(queue));
+}
+
 export default function ProfilPage() {
-  const [levelInfo, setLevelInfo] = useState(() => getLevelInfo(getTotalXP()));
-  const [gems, setGems] = useState<Record<string, number>>(() => getGems());
+  const [levelInfo, setLevelInfo] = useState(() => getLevelInfo(0));
+  const [gems, setGems] = useState<Record<string, number>>({});
   const [convertOpen, setConvertOpen] = useState(false);
+  const [craftOpen, setCraftOpen] = useState(false);
+  const [craftedTier, setCraftedTier] = useState<string | null>(null);
+  const [showXP, setShowXP] = useState(false);
 
   useEffect(() => {
+    // Hydrate from localStorage after mount
+    setLevelInfo(getLevelInfo(getTotalXP()));
+    setGems(getGems());
+
     function syncXP() { setLevelInfo(getLevelInfo(getTotalXP())); }
     function syncGems() { setGems(getGems()); }
     window.addEventListener("csv-xp-updated", syncXP);
@@ -36,7 +92,9 @@ export default function ProfilPage() {
     };
   }, []);
 
-  const { current } = levelInfo;
+  const { current, next, progressPct, totalXP } = levelInfo;
+  const xpInLevel  = totalXP - current.xpStart;
+  const xpForLevel = next ? next.xpStart - current.xpStart : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", fontFamily: F.body, color: C.ink }}>
@@ -47,7 +105,7 @@ export default function ProfilPage() {
           display: "flex",
           alignItems: "center",
           gap: 14,
-          padding: "14px 16px",
+          padding: "16px 16px",
           borderRadius: 14,
           background: "rgba(255,255,255,0.045)",
           border: `1px solid ${C.border}`,
@@ -57,15 +115,15 @@ export default function ProfilPage() {
             {LEVEL_SVG[current.level] && (
               <img
                 src={`/ranks/levels/${LEVEL_SVG[current.level]}.svg`}
-                width={56}
-                height={56}
+                width={54}
+                height={54}
                 alt={current.name}
                 style={{ objectFit: "contain", display: "block" }}
               />
             )}
           </div>
           {/* Identity */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
             <div style={{ fontFamily: F.body, fontSize: 17, fontWeight: 800, color: C.muted, letterSpacing: "-0.01em" }}>
               Non connecté
             </div>
@@ -73,6 +131,92 @@ export default function ProfilPage() {
               CONNECTE-TOI POUR SAUVEGARDER
             </div>
           </div>
+
+          {/* XP ring */}
+          {(() => {
+            const SIZE = 42;
+            const STROKE = 1.5;
+            const R = (SIZE - STROKE) / 2;
+            const CIRC = 2 * Math.PI * R;
+            const offset = CIRC * (1 - progressPct / 100);
+            return (
+              <div
+                style={{ position: "relative", flexShrink: 0, alignSelf: "center" }}
+                onMouseEnter={() => setShowXP(true)}
+                onMouseLeave={() => setShowXP(false)}
+              >
+                <svg width={SIZE} height={SIZE} style={{ display: "block", transform: "rotate(-90deg)" }}>
+                  {/* Track */}
+                  <circle
+                    cx={SIZE / 2} cy={SIZE / 2} r={R}
+                    fill="none"
+                    stroke="rgba(255,255,255,0.08)"
+                    strokeWidth={STROKE}
+                  />
+                  {/* Fill */}
+                  <circle
+                    cx={SIZE / 2} cy={SIZE / 2} r={R}
+                    fill="none"
+                    stroke={C.gold}
+                    strokeWidth={STROKE}
+                    strokeLinecap="round"
+                    strokeDasharray={CIRC}
+                    strokeDashoffset={offset}
+                    style={{ transition: "stroke-dashoffset 0.4s ease" }}
+                  />
+                </svg>
+                {/* Next level icon centered in ring */}
+                {next && LEVEL_SVG[next.level] && (
+                  <img
+                    src={`/ranks/levels/${LEVEL_SVG[next.level]}.svg`}
+                    width={24}
+                    height={24}
+                    alt={`lvl${next.level}`}
+                    style={{
+                      position: "absolute",
+                      top: "50%", left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      objectFit: "contain",
+                      opacity: 0.5,
+                    }}
+                  />
+                )}
+                {/* Hover tooltip */}
+                {showXP && (
+                  <div style={{
+                    position: "absolute",
+                    bottom: "calc(100% + 6px)",
+                    right: 0,
+                    width: "max-content",
+                    background: C.bg2,
+                    border: `1px solid ${C.borderHi}`,
+                    borderRadius: 6,
+                    padding: "5px 10px",
+                    zIndex: 200,
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 3,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                      <span style={{ fontFamily: F.mono, fontSize: 9, fontWeight: 800, color: C.gold }}>
+                        {xpInLevel.toLocaleString()}
+                      </span>
+                      <span style={{ fontFamily: F.mono, fontSize: 9, color: C.faint }}>
+                        / {xpForLevel > 0 ? xpForLevel.toLocaleString() : "—"} XP
+                      </span>
+                    </div>
+                    {next && (
+                      <span style={{ fontFamily: F.mono, fontSize: 8, color: C.teal, letterSpacing: "0.06em" }}>
+                        {nextRewardLabel(next.level)}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
@@ -182,24 +326,25 @@ export default function ProfilPage() {
           {/* Action buttons */}
           <div style={{ display: "flex", gap: 6, marginTop: 10 }}>
             <button
+              onClick={() => { setCraftOpen((v) => !v); setConvertOpen(false); setCraftedTier(null); }}
               style={{
                 flex: 1,
                 padding: "7px 14px",
                 borderRadius: 8,
-                background: `linear-gradient(180deg, ${C.teal} 0%, #3a8094 100%)`,
-                border: "1px solid rgba(255,255,255,0.18)",
+                background: craftOpen ? "rgba(255,255,255,0.10)" : `linear-gradient(180deg, ${C.teal} 0%, #3a8094 100%)`,
+                border: craftOpen ? `1px solid ${C.borderHi}` : "1px solid rgba(255,255,255,0.18)",
                 fontFamily: F.body,
                 fontSize: 11,
                 fontWeight: 700,
-                color: "#0a1a1f",
+                color: craftOpen ? C.ink : "#0a1a1f",
                 cursor: "pointer",
                 touchAction: "manipulation",
               }}
             >
-              Craft pack
+              {craftOpen ? "✕ Fermer" : "Craft pack"}
             </button>
             <button
-              onClick={() => setConvertOpen((v) => !v)}
+              onClick={() => { setConvertOpen((v) => !v); setCraftOpen(false); }}
               style={{
                 flex: 1,
                 padding: "7px 14px",
@@ -217,6 +362,81 @@ export default function ProfilPage() {
               {convertOpen ? "✕ Fermer" : "Convertir"}
             </button>
           </div>
+
+          {/* Craft panel */}
+          {craftOpen && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${C.border}` }}>
+              <div style={{ fontFamily: F.mono, fontSize: 8, letterSpacing: "0.12em", textTransform: "uppercase", color: C.faint, marginBottom: 6 }}>
+                250 GEMMES → 1 PACK THÉMATIQUE
+              </div>
+              {craftedTier ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0" }}>
+                  <Gem tier={craftedTier} size={16} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 800, color: GEM_COLORS[craftedTier]?.[0] ?? C.teal }}>
+                      {GEM_PARTY_NAMES[craftedTier]} — {GEM_PACK_NAMES[craftedTier]} pack
+                    </span>
+                    <span style={{ fontFamily: F.mono, fontSize: 8, color: C.faint, letterSpacing: "0.08em" }}>
+                      ajouté dans tes packs ✓
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                GEM_TIERS.map((tier) => {
+                  const amount = gems[tier] ?? 0;
+                  const canCraft = amount >= CRAFT_THRESHOLD;
+                  const [c1, c2] = GEM_COLORS[tier] ?? [C.teal, C.tealDk];
+                  return (
+                    <div
+                      key={tier}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "6px 0",
+                        borderTop: `1px solid ${C.border}`,
+                        opacity: canCraft ? 1 : 0.4,
+                      }}
+                    >
+                      <Gem tier={tier} size={13} />
+                      <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 1 }}>
+                        <span style={{ fontFamily: F.body, fontSize: 11, fontWeight: 800, color: canCraft ? c1 : C.faint }}>
+                          {GEM_PARTY_NAMES[tier]}
+                        </span>
+                        <span style={{ fontFamily: F.mono, fontSize: 7.5, color: C.faint, letterSpacing: "0.06em" }}>
+                          {GEM_PACK_NAMES[tier]} · {amount}/{CRAFT_THRESHOLD} 💎
+                        </span>
+                      </div>
+                      <button
+                        disabled={!canCraft}
+                        onClick={() => {
+                          removeGems(tier, CRAFT_THRESHOLD);
+                          pushCraftedPack(tier);
+                          setGems(getGems());
+                          setCraftedTier(tier);
+                        }}
+                        style={{
+                          padding: "5px 12px",
+                          borderRadius: 6,
+                          background: canCraft ? `linear-gradient(135deg, ${c1}, ${c2})` : "rgba(255,255,255,0.04)",
+                          border: canCraft ? "1px solid rgba(255,255,255,0.22)" : `1px solid ${C.border}`,
+                          color: canCraft ? "#07121a" : C.faint,
+                          fontFamily: F.body,
+                          fontSize: 10,
+                          fontWeight: 800,
+                          cursor: canCraft ? "pointer" : "not-allowed",
+                          touchAction: "manipulation",
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        CRAFT
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
 
           {/* Conversion panel */}
           {convertOpen && (

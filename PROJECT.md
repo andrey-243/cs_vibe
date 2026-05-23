@@ -789,6 +789,12 @@ Bonus queue  (1 slot fixe, toujours disponible — ex-ads)
 - `Ouvrir →` — pack prêt, aucune pub requise
 - `Claim →` — réclamer un pack disponible (gratuit, sans pub)
 
+**Persistence de la queue (`csv-daily-queue` localStorage)**
+Toute la `dailyQueue` (daily + milestone/level-up) est sauvegardée à chaque changement.
+Au mount : restauration depuis localStorage, puis complétion des slots daily manquants selon le streak tier.
+Les packs milestone ont un champ `rewardTier?: string` (ex: `"TOP5"`, `"free"`) qui contrôle le label UI et filtre le pool de l'API.
+`makeMilestonePack()` utilise un compteur module-level `_packSeq` pour garantir des IDs uniques même si plusieurs packs arrivent dans la même milliseconde.
+
 **Skip timer — incrémental, universel (s'applique à TOUS les slots des deux queues)**
 
 Chaque pub réduit au palier suivant. Dernier palier = instant (ouvre directement). Max 3 pubs.
@@ -912,10 +918,24 @@ Constantes dans `tokens.ts` :
 | Event MVP | 150 |
 | Icon | 400 |
 
-**Craft (gems → pack) :**
-- 250 gems d'un tier → pack thématique garanti dans ce tier (ex: 250 GRINDERS → 1 Tier 2 pack)
-- Lors du craft : afficher party name + full pack name (`CHOSEN FEW — S-Tier pack`)
-- Choix : par équipe (joueur garanti de l'équipe) OU par nationalité (filtre sur `nationality`)
+**Craft (gems → pack) — implémenté (`profil/page.tsx`)**
+- Bouton "Craft pack" toggle dans le tab Profil (panel inline, ferme "Convertir" si ouvert)
+- Panel liste les 6 tiers, tiers insuffisants à 40% opacité, bouton CRAFT grisé
+- Clic CRAFT : `removeGems(tier, 250)` + `pushCraftedPack(tier)` → écrit directement dans `csv-daily-queue` (page.tsx non monté depuis Profil)
+- Confirmation : `{GEM_PARTY_NAMES[tier]} — {GEM_PACK_NAMES[tier]} pack` + "ajouté dans tes packs ✓"
+- Timer d'ouverture selon le tier (même table que skip timer) :
+
+| Tier | Timer | Pub 1 | Pub 2 | Pub 3 |
+|---|---|---|---|---|
+| TOP100 | 1h | → 10min | → instant | — |
+| TOP75 | 2h | → 30min | → 10min | → instant |
+| TOP50 | 4h | → 1h | → 10min | → instant |
+| TOP25 | 6h | → 1h | → 10min | → instant |
+| TOP15 | 8h | → 1h | → 10min | → instant |
+| TOP5 | 12h | → 2h | → 30min | → instant |
+
+Le timer affiché est le **temps restant total** — chaque pub le réécrase avec le palier suivant (pas un délai inter-pubs).
+- Choix par équipe / nationalité : V2
 
 **Conversion ascendante (sink pour Bronze/Silver)**
 ```
@@ -1741,9 +1761,12 @@ Stage tout (`git add -A`), commit, push en une commande depuis n'importe quel te
 - [x] XP system frontend — `lib/xp.ts` + `lib/challenges.ts`, courbe 33 niveaux (Silver III = fin sem 1 casual, cap ESEA C = 70 000 XP)
 - [x] Système de streak — widget full-width (jours, ×XP mult, barre 7 cases, hint palier suivant), logique localStorage complète
 - [x] Bulk uncraft collection — Décraft doublons (keep 1) en 1 clic + mode sélection multi-cartes, confirmation modal avec preview gems par tier
-- [ ] Level-up detection dans `addXP()` — comparer ancien/nouveau niveau, dispatcher `csv-level-up` CustomEvent
-- [ ] Attribution récompenses level-up — pack ou gems selon `nextLevelReward(level)`, persiste en localStorage (queue pack à claim)
-- [ ] Modal/notification level-up — célébration visuelle + affichage de la récompense reçue
+- [x] Level-up detection dans `addXP()` — compare ancien/nouveau niveau, push `PendingLevelUp` dans `csv-pending-levelups`, dispatche `csv-level-up`
+- [x] Attribution récompenses level-up — `LEVEL_REWARDS` (33 niveaux), `LevelUpModal` écoute l'event, dispatche `csv-pack-granted` avec `packTier` par pack
+- [x] Modal level-up — `LevelUpModal.tsx` (zIndex 700), phase colors (CS2/Faceit/ESEA), multi-pack, chaîne les pending en séquence
+- [x] Packs level-up persistés dans `csv-daily-queue` (localStorage) — survivent aux refreshs, label "★ LEVEL UP · Tier X" coloré par tier
+- [x] API `/api/pack-open` filtre le pool par `rewardTier` (ex: TOP5 = équipes #1–5 uniquement)
+- [x] Fix hydration mismatch profil/page.tsx — init state avec valeurs neutres, hydrate dans useEffect
 - [ ] Trade want/have market
 - [ ] Intégration ads
 

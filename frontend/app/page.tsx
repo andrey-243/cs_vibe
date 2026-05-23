@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { C, F, rarityChrome } from "./lib/tokens";
+import { C, F, rarityChrome, GEM_PACK_NAMES, GEM_COLORS } from "./lib/tokens";
 import type { RarityTier } from "./lib/tokens";
 import TopBar from "./components/TopBar";
 import XPBar from "./components/XPBar";
@@ -39,6 +39,7 @@ type PackType = "daily" | "ads" | "milestone";
 interface QueuedPack {
   id: string;
   type: PackType;
+  rewardTier?: string;     // e.g. "TOP5", "TOP75" — set on level-up reward packs
   endsAt: number;
   initialDuration: number; // ms — used to look up skip checkpoints
   adsUsed: number;
@@ -106,11 +107,13 @@ function makeDailyPack(idx: number): QueuedPack {
   };
 }
 
-function makeMilestonePack(): QueuedPack {
+let _packSeq = 0;
+function makeMilestonePack(rewardTier?: string): QueuedPack {
   const checkpoints = skipTimerCheckpoints(PACK_TIMER_MS);
   return {
-    id: `milestone-${Date.now()}`,
+    id: `milestone-${Date.now()}-${++_packSeq}`,
     type: "milestone",
+    rewardTier,
     endsAt: 0,
     initialDuration: PACK_TIMER_MS,
     adsUsed: 0,
@@ -143,13 +146,25 @@ export default function PackPage() {
     return () => clearInterval(t);
   }, []);
 
-  // Touch streak once on mount, init queues based on resulting streak tier
+  // Touch streak once on mount, restore or init daily queue
   useEffect(() => {
     touchStreak();
     const state = getStreak();
     setStreakState(state);
     const tier = getStreakTier(state.streak);
-    setDailyQueue(Array.from({ length: tier.dailySlots }, (_, i) => makeDailyPack(i + 1)));
+
+    // Restore saved queue, then fill missing daily slots
+    let saved: QueuedPack[] = [];
+    try { saved = JSON.parse(localStorage.getItem("csv-daily-queue") ?? "[]"); } catch { /* */ }
+
+    // Remove daily packs that were already opened (not in queue anymore)
+    const milestones = saved.filter((p) => p.type === "milestone");
+    const existingDailies = saved.filter((p) => p.type === "daily");
+    const missingSlotsCount = Math.max(0, tier.dailySlots - existingDailies.length);
+    const newDailies = Array.from({ length: missingSlotsCount }, (_, i) =>
+      makeDailyPack(existingDailies.length + i + 1)
+    );
+    setDailyQueue([...existingDailies, ...newDailies, ...milestones]);
   }, []);
 
   useEffect(() => {
@@ -163,10 +178,17 @@ export default function PackPage() {
     return () => window.removeEventListener("csv-challenges-updated", refresh);
   }, []);
 
-  // Grant a free pack when a level-up reward includes one
+  // Persist dailyQueue to localStorage whenever it changes
   useEffect(() => {
-    function onPackGranted() {
-      setDailyQueue((q) => [...q, makeMilestonePack()]);
+    if (dailyQueue.length === 0) return;
+    localStorage.setItem("csv-daily-queue", JSON.stringify(dailyQueue));
+  }, [dailyQueue]);
+
+  // Grant a pack when a level-up reward includes one (uses packTier from CustomEvent detail)
+  useEffect(() => {
+    function onPackGranted(e: Event) {
+      const tier = (e as CustomEvent<{ packTier?: string }>).detail?.packTier;
+      setDailyQueue((q) => [...q, makeMilestonePack(tier)]);
     }
     window.addEventListener("csv-pack-granted", onPackGranted);
     return () => window.removeEventListener("csv-pack-granted", onPackGranted);
@@ -203,7 +225,8 @@ export default function PackPage() {
     let cards: RevealCard[] = [];
     try {
       const typeParam = isAds ? "&type=ads" : "";
-      const res = await fetch(`/api/pack-open?streakDays=${streakState.streak}${typeParam}`);
+      const tierParam = (!isAds && pack.rewardTier && pack.rewardTier !== "free") ? `&rewardTier=${pack.rewardTier}` : "";
+      const res = await fetch(`/api/pack-open?streakDays=${streakState.streak}${typeParam}${tierParam}`);
       if (res.ok) {
         const data = await res.json();
         cards = data.map((c: {
@@ -316,8 +339,16 @@ export default function PackPage() {
     const canSkip = isWaiting && pack.adsUsed < pack.adsMax;
     const nextCheckpoint = skipTimerCheckpoints(pack.initialDuration)[pack.adsUsed];
     const isLastPub = canSkip && nextCheckpoint === 0;
-    const typeColor = isAds ? C.gold : pack.type === "milestone" ? C.gold : C.teal;
-    const typeLabel = isAds ? "BONUS · XP ×1.2 · DROPS+" : pack.type === "milestone" ? "★ STREAK MILESTONE" : "QUOTIDIEN";
+    const isLevelUpPack = pack.type === "milestone" && !!pack.rewardTier;
+    const levelUpTierColor = pack.rewardTier ? (GEM_COLORS[pack.rewardTier]?.[0] ?? C.gold) : C.gold;
+    const typeColor = isAds ? C.gold : isLevelUpPack ? levelUpTierColor : pack.type === "milestone" ? C.gold : C.teal;
+    const typeLabel = isAds
+      ? "BONUS · XP ×1.2 · DROPS+"
+      : isLevelUpPack
+        ? `★ LEVEL UP · ${pack.rewardTier === "free" ? "STANDARD" : (GEM_PACK_NAMES[pack.rewardTier!] ?? pack.rewardTier)}`
+        : pack.type === "milestone"
+          ? "★ STREAK MILESTONE"
+          : "QUOTIDIEN";
     const glowColor = isReady ? (isAds ? "rgba(201,165,101,0.32)" : "rgba(109,181,196,0.32)") : C.border;
     const bgColor = isReady
       ? (isAds ? "linear-gradient(135deg, rgba(201,165,101,0.10), rgba(201,165,101,0.03))" : "linear-gradient(135deg, rgba(109,181,196,0.10), rgba(109,181,196,0.03))")
@@ -333,7 +364,11 @@ export default function PackPage() {
           <div style={{ fontFamily: F.mono, fontSize: 8, letterSpacing: "0.14em", textTransform: "uppercase", color: typeColor, marginBottom: 2 }}>
             {typeLabel}
           </div>
-          <div style={{ fontFamily: F.body, fontSize: 14, fontWeight: 700 }}>Pack standard · 5 cartes</div>
+          <div style={{ fontFamily: F.body, fontSize: 14, fontWeight: 700 }}>
+            {isLevelUpPack && pack.rewardTier && pack.rewardTier !== "free"
+              ? `Pack ${GEM_PACK_NAMES[pack.rewardTier] ?? pack.rewardTier} · 5 cartes`
+              : "Pack standard · 5 cartes"}
+          </div>
           <div style={{ fontFamily: F.mono, fontSize: isReady ? 12 : 11, fontWeight: 700, color: isReady ? typeColor : C.muted, letterSpacing: "0.08em", marginTop: 3, textShadow: isReady ? `0 0 10px ${typeColor}66` : "none" }}>
             {!pack.claimed ? "À CLAIM" : isReady ? "✦ PRÊT" : formatMs(remaining)}
           </div>
